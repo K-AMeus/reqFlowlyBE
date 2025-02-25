@@ -1,0 +1,105 @@
+.container {
+    background-color: #000000;
+    color: #ffffff;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 800px;
+    margin: 2rem auto;
+    font-family: 'Arial', sans-serif;
+    border: 4px solid #ffffff;
+}
+
+
+.title {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.tabButtons {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.tabButton {
+    background-color: #1e1e1e;
+    border: none;
+    color: #fff;
+    padding: 0.5rem 1.5rem;
+    margin: 0 0.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.tabButton:hover:not(:disabled) {
+    background-color: #333;
+}
+
+.tabButton:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.active {
+    background-color: #6200ee;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.textarea {
+    width: 100%;
+    max-width: 600px;
+    height: 150px;
+    padding: 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background-color: #1e1e1e;
+    color: #fff;
+    margin-bottom: 1rem;
+}
+
+.fileInput {
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+.submitButton {
+    background-color: #6200ee;
+    border: none;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.submitButton:hover {
+    background-color: #7e3ff2;
+}
+
+.error {
+    color: #ff6b6b;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.results {
+    margin-top: 1.5rem;
+}
+
+.domainList {
+    list-style-type: none;
+    padding: 0;
+}
+
+.domainList li {
+    background-color: #1e1e1e;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-radius: 4px;
+}
