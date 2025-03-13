@@ -21,6 +21,7 @@
     margin-bottom: 1rem;
 }
 
+
 .tabButton {
     background-color: #1e1e1e;
     border: none;
@@ -46,25 +47,25 @@
 }
 
 .form {
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
 }
 
 .textarea {
     width: 100%;
-    max-width: 600px;
-    height: 150px;
+    min-height: 150px;
     padding: 0.75rem;
     border-radius: 4px;
     border: 1px solid #444;
     background-color: #1e1e1e;
     color: #fff;
-    margin-bottom: 1rem;
 }
 
 .fileInput {
-    margin-bottom: 1rem;
     color: #fff;
 }
 
@@ -72,11 +73,14 @@
     background-color: #6200ee;
     border: none;
     color: #fff;
-    padding: 0.75rem 1.5rem;
+    padding: 0.5rem 1rem;
     border-radius: 4px;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    display: block;
+    align-self: center;
 }
+
 
 .submitButton:hover {
     background-color: #7e3ff2;
@@ -84,7 +88,7 @@
 
 .error {
     color: #ff6b6b;
-    text-align: center;
+    text-align: left;
     margin-top: 1rem;
 }
 
@@ -92,14 +96,80 @@
     margin-top: 1.5rem;
 }
 
+
+
 .domainList {
     list-style-type: none;
     padding: 0;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-.domainList li {
+.domainListItem {
+    display: inline-block;
     background-color: #1e1e1e;
     padding: 0.5rem;
-    margin-bottom: 0.5rem;
     border-radius: 4px;
+    transition: text-decoration 0.2s ease;
+}
+
+.domainListItem:hover {
+    cursor: pointer;
+    text-decoration: line-through;
+}
+
+.addObjectContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    align-items: center;
+}
+
+.addObjectInput {
+    background-color: #1e1e1e;
+    border: 1px solid #444;
+    color: #fff;
+    border-radius: 4px;
+    padding: 0.5rem;
+    width: auto;
+}
+
+.addObjectButton {
+    background-color: #28a745;
+    border: none;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+    width: auto;
+}
+
+.addObjectButton:hover {
+    background-color: #2ecc71;
+}
+
+.finalizeButton {
+    margin-top: 1rem;
+    background-color: #555;
+    border: none;
+    color: #fff;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.finalizeButton:hover {
+    background-color: #999;
+}
+
+body {
+    background-color: #000000;
+    margin: 0;
+    padding: 0;
+    font-family: 'Arial', sans-serif;
+    color: #ffffff;
 }

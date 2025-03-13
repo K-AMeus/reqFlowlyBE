@@ -4,70 +4,130 @@ import styles from '../styles/UseCaseUploader.module.css';
 
 interface UseCaseResponse {
     domainObjects: string[];
+    actions: string[];
 }
 
 const UseCaseUploader: React.FC = () => {
-    const [description, setDescription] = useState<string>('');
+    const [description, setDescription] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [domainObjects, setDomainObjects] = useState<string[]>([]);
-    const [loading, setLoading] = useState<boolean>(false);
-    const [error, setError] = useState<string>('');
+    const [actions, setActions] = useState<string[]>([]);
+    const [newDomainObject, setNewDomainObject] = useState('');
+    const [newAction, setNewAction] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [selectedTab, setSelectedTab] = useState<'text' | 'file'>('text');
 
+    /** Handle text input submission */
     const handleTextSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setDomainObjects([]);
+        setActions([]);
         setLoading(true);
+
         try {
             const response = await axios.post<UseCaseResponse>(
                 'http://localhost:8080/api/usecase-service/v1/usecases/text',
                 { description }
             );
-            setDomainObjects(response.data.domainObjects);
+            setDomainObjects(response.data.domainObjects || []);
+            setActions(response.data.actions || []);
         } catch (err: any) {
+            console.error(err);
             setError('Error processing text input.');
         } finally {
             setLoading(false);
         }
     };
 
+    /** Handle PDF file submission */
     const handleFileSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!file) return;
         setError('');
         setDomainObjects([]);
+        setActions([]);
         setLoading(true);
+
         try {
             const formData = new FormData();
             formData.append('file', file);
+
             const response = await axios.post<UseCaseResponse>(
                 'http://localhost:8080/api/usecase-service/v1/usecases/upload',
                 formData,
                 {
                     headers: {
-                        ["Content-Type"]: "multipart/form-data"
+                        'Content-Type': 'multipart/form-data'
                     }
                 }
             );
 
-            setDomainObjects(response.data.domainObjects);
+            setDomainObjects(response.data.domainObjects || []);
+            setActions(response.data.actions || []);
         } catch (err: any) {
+            console.error(err);
             setError('Error processing file upload.');
         } finally {
             setLoading(false);
         }
     };
 
+    /** File input handler */
     const onFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files.length > 0) {
-            setFile(e.target?.files[0]);
+        if (e.target.files && e.target.files.length > 0) {
+            setFile(e.target.files[0]);
+        }
+    };
+
+    /** Remove domain object by index */
+    const removeDomainObject = (index: number) => {
+        setDomainObjects((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    /** Remove action by index */
+    const removeAction = (index: number) => {
+        setActions((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    /** Add a new domain object to the list */
+    const addDomainObject = () => {
+        if (newDomainObject.trim()) {
+            setDomainObjects((prev) => [...prev, newDomainObject.trim()]);
+            setNewDomainObject('');
+        }
+    };
+
+    /** Add a new action to the list */
+    const addAction = () => {
+        if (newAction.trim()) {
+            setActions((prev) => [...prev, newAction.trim()]);
+            setNewAction('');
+        }
+    };
+
+    /** todo */
+    const handleFinalize = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.post<UseCaseResponse>(
+                'http://localhost:8080/api/usecase-service/v1/usecases/finalize',
+                { domainObjects, actions }
+            );
+            alert('Domain objects & actions finalized successfully!');
+        } catch (err) {
+            console.error(err);
+            setError('Error finalizing data.');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <div className={styles.container}>
             <h1 className={styles.title}>Automated Test Case Generation Tool</h1>
+
             <div className={styles.tabButtons}>
                 <button
                     onClick={() => setSelectedTab('text')}
@@ -115,15 +175,79 @@ const UseCaseUploader: React.FC = () => {
 
             {error && <p className={styles.error}>{error}</p>}
 
+            {/* Domain Objects */}
             {domainObjects.length > 0 && (
                 <div className={styles.results}>
-                    <h2>Identified Domain Objects:</h2>
+                    <h2>Domain Objects:</h2>
                     <ul className={styles.domainList}>
                         {domainObjects.map((obj, index) => (
-                            <li key={index}>{obj}</li>
+                            <li
+                                key={index}
+                                className={styles.domainListItem}
+                                onClick={() => removeDomainObject(index)}
+                            >
+                                {obj}
+                            </li>
                         ))}
                     </ul>
+
+                    {/* Add new domain object */}
+                    <div className={styles.addObjectContainer}>
+                        <input
+                            type="text"
+                            value={newDomainObject}
+                            onChange={(e) => setNewDomainObject(e.target.value)}
+                            placeholder="Add new domain object..."
+                            className={styles.addObjectInput}
+                        />
+                        <button onClick={addDomainObject} className={styles.addObjectButton}>
+                            Add
+                        </button>
+                    </div>
                 </div>
+            )}
+
+            {/* Actions */}
+            {actions.length > 0 && (
+                <div className={styles.results}>
+                    <h2>Actions:</h2>
+                    <ul className={styles.domainList}>
+                        {actions.map((act, index) => (
+                            <li
+                                key={index}
+                                className={styles.domainListItem}
+                                onClick={() => removeAction(index)}
+                            >
+                                {act}
+                            </li>
+                        ))}
+                    </ul>
+
+                    {/* Add new action */}
+                    <div className={styles.addObjectContainer}>
+                        <input
+                            type="text"
+                            value={newAction}
+                            onChange={(e) => setNewAction(e.target.value)}
+                            placeholder="Add new action..."
+                            className={styles.addObjectInput}
+                        />
+                        <button onClick={addAction} className={styles.addObjectButton}>
+                            Add
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* todo */}
+            {(domainObjects.length > 0 || actions.length > 0) && (
+                <button
+                    onClick={handleFinalize}
+                    className={styles.finalizeButton}
+                    disabled={loading}
+                >
+                    {loading ? 'Finalizing...' : 'Finalize Domain Objects & Actions'}
+                </button>
             )}
         </div>
     );
