@@ -11,19 +11,25 @@ const UseCaseUploader: React.FC = () => {
     const [description, setDescription] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [domainObjects, setDomainObjects] = useState<string[]>([]);
+    const [removedDomainObjects, setRemovedDomainObjects] = useState<string[]>([]);
     const [actions, setActions] = useState<string[]>([]);
+    const [removedActions, setRemovedActions] = useState<string[]>([]);
     const [newDomainObject, setNewDomainObject] = useState('');
     const [newAction, setNewAction] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [selectedTab, setSelectedTab] = useState<'text' | 'file'>('text');
+    const [showDeletedDomainObjects, setShowDeletedDomainObjects] = useState(false);
+    const [showDeletedActions, setShowDeletedActions] = useState(false);
 
     /** Handle text input submission */
     const handleTextSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setError('');
         setDomainObjects([]);
+        setRemovedDomainObjects([]);
         setActions([]);
+        setRemovedActions([]);
         setLoading(true);
 
         try {
@@ -47,7 +53,9 @@ const UseCaseUploader: React.FC = () => {
         if (!file) return;
         setError('');
         setDomainObjects([]);
+        setRemovedDomainObjects([]);
         setActions([]);
+        setRemovedActions([]);
         setLoading(true);
 
         try {
@@ -81,14 +89,26 @@ const UseCaseUploader: React.FC = () => {
         }
     };
 
-    /** Remove domain object by index */
-    const removeDomainObject = (index: number) => {
-        setDomainObjects((prev) => prev.filter((_, i) => i !== index));
+    /** Toggle domain object: active -> removed, removed -> active */
+    const toggleDomainObject = (item: string, fromActive: boolean) => {
+        if (fromActive) {
+            setDomainObjects((prev) => prev.filter((i) => i !== item));
+            setRemovedDomainObjects((prev) => [...prev, item]);
+        } else {
+            setRemovedDomainObjects((prev) => prev.filter((i) => i !== item));
+            setDomainObjects((prev) => [...prev, item]);
+        }
     };
 
-    /** Remove action by index */
-    const removeAction = (index: number) => {
-        setActions((prev) => prev.filter((_, i) => i !== index));
+    /** Toggle action: active -> removed, removed -> active */
+    const toggleAction = (item: string, fromActive: boolean) => {
+        if (fromActive) {
+            setActions((prev) => prev.filter((i) => i !== item));
+            setRemovedActions((prev) => [...prev, item]);
+        } else {
+            setRemovedActions((prev) => prev.filter((i) => i !== item));
+            setActions((prev) => [...prev, item]);
+        }
     };
 
     /** Add a new domain object to the list */
@@ -107,7 +127,7 @@ const UseCaseUploader: React.FC = () => {
         }
     };
 
-    /** todo */
+    /** Finalize domain objects and actions */
     const handleFinalize = async () => {
         try {
             setLoading(true);
@@ -151,7 +171,7 @@ const UseCaseUploader: React.FC = () => {
               className={styles.textarea}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter your use case description here..."
+              placeholder="Enter your requirements here..."
           />
                     <button type="submit" disabled={loading} className={styles.submitButton}>
                         {loading ? 'Processing...' : 'Submit Text'}
@@ -176,15 +196,15 @@ const UseCaseUploader: React.FC = () => {
             {error && <p className={styles.error}>{error}</p>}
 
             {/* Domain Objects */}
-            {domainObjects.length > 0 && (
+            {(domainObjects.length > 0 || removedDomainObjects.length > 0) && (
                 <div className={styles.results}>
                     <h2>Domain Objects:</h2>
                     <ul className={styles.domainList}>
                         {domainObjects.map((obj, index) => (
                             <li
-                                key={index}
+                                key={`active-${index}`}
                                 className={styles.domainListItem}
-                                onClick={() => removeDomainObject(index)}
+                                onClick={() => toggleDomainObject(obj, true)}
                             >
                                 {obj}
                             </li>
@@ -204,19 +224,42 @@ const UseCaseUploader: React.FC = () => {
                             Add
                         </button>
                     </div>
+
+                    <h2
+                        className={styles.deletedHeader}
+                        onClick={() => setShowDeletedDomainObjects((prev) => !prev)}
+                    >
+                        Deleted Domain Objects
+                        <span className={styles.dropdownIcon}>
+              {showDeletedDomainObjects ? '▼' : '▲'}
+            </span>
+                    </h2>
+                    {showDeletedDomainObjects && removedDomainObjects.length > 0 && (
+                        <ul className={styles.removedList}>
+                            {removedDomainObjects.map((obj, index) => (
+                                <li
+                                    key={`removed-${index}`}
+                                    className={`${styles.domainListItem} ${styles.removed}`}
+                                    onClick={() => toggleDomainObject(obj, false)}
+                                >
+                                    {obj}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             )}
 
             {/* Actions */}
-            {actions.length > 0 && (
+            {(actions.length > 0 || removedActions.length > 0) && (
                 <div className={styles.results}>
                     <h2>Actions:</h2>
                     <ul className={styles.domainList}>
                         {actions.map((act, index) => (
                             <li
-                                key={index}
+                                key={`active-action-${index}`}
                                 className={styles.domainListItem}
-                                onClick={() => removeAction(index)}
+                                onClick={() => toggleAction(act, true)}
                             >
                                 {act}
                             </li>
@@ -236,16 +279,34 @@ const UseCaseUploader: React.FC = () => {
                             Add
                         </button>
                     </div>
+
+                    <h2
+                        className={styles.deletedHeader}
+                        onClick={() => setShowDeletedActions((prev) => !prev)}
+                    >
+                        Deleted Actions
+                        <span className={styles.dropdownIcon}>
+              {showDeletedActions ? '▼' : '▲'}
+            </span>
+                    </h2>
+                    {showDeletedActions && removedActions.length > 0 && (
+                        <ul className={styles.removedList}>
+                            {removedActions.map((act, index) => (
+                                <li
+                                    key={`removed-action-${index}`}
+                                    className={`${styles.domainListItem} ${styles.removed}`}
+                                    onClick={() => toggleAction(act, false)}
+                                >
+                                    {act}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             )}
 
-            {/* todo */}
             {(domainObjects.length > 0 || actions.length > 0) && (
-                <button
-                    onClick={handleFinalize}
-                    className={styles.finalizeButton}
-                    disabled={loading}
-                >
+                <button onClick={handleFinalize} className={styles.finalizeButton} disabled={loading}>
                     {loading ? 'Finalizing...' : 'Finalize Domain Objects & Actions'}
                 </button>
             )}
