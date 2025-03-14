@@ -53,11 +53,15 @@ public class UseCaseService {
 
 
     private String callOpenAiForDomainObjects(String text) {
-        String prompt = "Extract the key domain objects (nouns) and important actions (verbs) " +
-                "from the following text. Always no matter what return valid json and so that both domain objects and actions exist (they can be empty). Return the result as valid JSON only (do not include any markdown formatting or triple backticks) in the following format:\n\n" +
+        String prompt = "Extract the key domain objects (nouns) and important actions (verbs) from the following text. " +
+                "Additionally, provide a list of suggested domain objects and a list of suggested actions that might logically " +
+                "complement the above lists (return 0 to 10 suggestions for each). " +
+                "Return valid JSON only (do not include any markdown formatting) in the following format:\n\n" +
                 "{\n" +
                 "  \"domainObjects\": [\"object1\", \"object2\"],\n" +
-                "  \"actions\": [\"action1\", \"action2\"]\n" +
+                "  \"suggestedDomainObjects\": [\"suggestion1\", \"suggestion2\"],\n" +
+                "  \"actions\": [\"action1\", \"action2\"],\n" +
+                "  \"suggestedActions\": [\"suggestion1\", \"suggestion2\"]\n" +
                 "}\n\n" +
                 "Text:\n" + text;
 
@@ -75,21 +79,22 @@ public class UseCaseService {
         String cleanedResponse = cleanGptResponse(gptResponse);
         try {
             ObjectMapper objectMapper = new ObjectMapper();
-
             JsonNode root = objectMapper.readTree(cleanedResponse);
 
             List<String> domainObjects = objectMapper.convertValue(
-                    root.get("domainObjects"), new TypeReference<>() {
-                    });
-
+                    root.get("domainObjects"), new TypeReference<List<String>>() {});
+            List<String> suggestedDomainObjects = objectMapper.convertValue(
+                    root.get("suggestedDomainObjects"), new TypeReference<List<String>>() {});
             List<String> actions = objectMapper.convertValue(
-                    root.get("actions"), new TypeReference<>() {
-                    });
+                    root.get("actions"), new TypeReference<List<String>>() {});
+            List<String> suggestedActions = objectMapper.convertValue(
+                    root.get("suggestedActions"), new TypeReference<List<String>>() {});
 
             UseCaseDTO dto = new UseCaseDTO();
             dto.setDomainObjects(domainObjects);
+            dto.setSuggestedDomainObjects(suggestedDomainObjects);
             dto.setActions(actions);
-
+            dto.setSuggestedActions(suggestedActions);
             return dto;
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse GPT response: " + cleanedResponse, e);
