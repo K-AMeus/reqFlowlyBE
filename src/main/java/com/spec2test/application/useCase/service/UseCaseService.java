@@ -1,6 +1,5 @@
 package com.spec2test.application.useCase.service;
 
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,14 +27,20 @@ public class UseCaseService {
 
     public UseCaseDTO processUseCaseText(UseCaseReq req) {
         String text = req.getDescription();
-        String gptResponse = callOpenAiForDomainObjects(text);
+        String userPrompt = (req.getCustomPrompt() != null && !req.getCustomPrompt().isBlank())
+                ? req.getCustomPrompt()
+                : "Extract the key domain objects (nouns) and important actions (verbs) from the following text.";
+        String gptResponse = callOpenAiForDomainObjects(text, userPrompt);
         return parseGptResponse(gptResponse);
     }
 
-    public UseCaseDTO processUseCaseFile(MultipartFile file) {
+    public UseCaseDTO processUseCaseFile(MultipartFile file, String customPrompt) {
         try {
             String text = extractTextFromPDF(file.getInputStream());
-            String gptResponse = callOpenAiForDomainObjects(text);
+            String userPrompt = (customPrompt != null && !customPrompt.isBlank())
+                    ? customPrompt
+                    : "Extract the key domain objects (nouns) and important actions (verbs) from the following text.";
+            String gptResponse = callOpenAiForDomainObjects(text, userPrompt);
             return parseGptResponse(gptResponse);
         } catch (Exception e) {
             throw new RuntimeException("Error processing PDF file", e);
@@ -50,13 +55,9 @@ public class UseCaseService {
         }
     }
 
-
-
-    private String callOpenAiForDomainObjects(String text) {
-        String prompt = "Extract the key domain objects (nouns) and important actions (verbs) from the following text. " +
-                "Additionally, provide a list of suggested domain objects and a list of suggested actions that might logically " +
-                "complement the above lists (return 0 to 10 suggestions for each). " +
-                "Return valid JSON only (do not include any markdown formatting) in the following format:\n\n" +
+    private String callOpenAiForDomainObjects(String text, String userPrompt) {
+        System.err.println("Reached service");
+        String prompt = userPrompt + "\nReturn valid JSON only (do not include any markdown formatting) in the following format:\n\n" +
                 "{\n" +
                 "  \"domainObjects\": [\"object1\", \"object2\"],\n" +
                 "  \"suggestedDomainObjects\": [\"suggestion1\", \"suggestion2\"],\n" +
@@ -71,9 +72,9 @@ public class UseCaseService {
                 .build();
 
         ChatCompletion chatCompletion = openaiClient.chat().completions().create(params);
+
         return chatCompletion.choices().getFirst().message().content().orElse("");
     }
-
 
     private UseCaseDTO parseGptResponse(String gptResponse) {
         String cleanedResponse = cleanGptResponse(gptResponse);
@@ -82,13 +83,17 @@ public class UseCaseService {
             JsonNode root = objectMapper.readTree(cleanedResponse);
 
             List<String> domainObjects = objectMapper.convertValue(
-                    root.get("domainObjects"), new TypeReference<List<String>>() {});
+                    root.get("domainObjects"), new TypeReference<>() {
+                    });
             List<String> suggestedDomainObjects = objectMapper.convertValue(
-                    root.get("suggestedDomainObjects"), new TypeReference<List<String>>() {});
+                    root.get("suggestedDomainObjects"), new TypeReference<>() {
+                    });
             List<String> actions = objectMapper.convertValue(
-                    root.get("actions"), new TypeReference<List<String>>() {});
+                    root.get("actions"), new TypeReference<>() {
+                    });
             List<String> suggestedActions = objectMapper.convertValue(
-                    root.get("suggestedActions"), new TypeReference<List<String>>() {});
+                    root.get("suggestedActions"), new TypeReference<>() {
+                    });
 
             UseCaseDTO dto = new UseCaseDTO();
             dto.setDomainObjects(domainObjects);

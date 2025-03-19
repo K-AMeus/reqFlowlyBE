@@ -21,10 +21,9 @@ public class UseCaseController {
     }
 
     @PostMapping("/upload")
-    public UseCaseDTO processUseCaseFile(@RequestParam("file") MultipartFile file) {
-        return useCaseService.processUseCaseFile(file);
+    public UseCaseDTO processUseCaseFile(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "customPrompt", required = false) String customPrompt) {
+        return useCaseService.processUseCaseFile(file, customPrompt);
     }
-
-
-
 }

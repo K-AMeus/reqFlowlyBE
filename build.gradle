@@ -39,7 +39,10 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'com.openai:openai-java:0.23.1'
-	implementation 'org.apache.pdfbox:pdfbox:3.0.4'
+	implementation ('org.apache.pdfbox:pdfbox:3.0.4') {
+		exclude group: 'commons-logging', module: 'commons-logging'
+	}
+
 }
 
 tasks.named('test') {
