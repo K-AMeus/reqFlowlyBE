@@ -18,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -29,7 +30,14 @@ public class UseCaseService {
         String text = req.getDescription();
         String userPrompt = (req.getCustomPrompt() != null && !req.getCustomPrompt().isBlank())
                 ? req.getCustomPrompt()
-                : "Extract the key domain objects (nouns) and important actions (verbs) from the following text.";
+                : """
+                From the functional requirements below, identify the domain entities (a.k.a. domain objects) for an information system.
+                Include both explicitly mentioned entities\s
+                Include implicitly required ones. For example, if “doctors write examination notes,” you may infer the existence of an Examination entity, or for example from some strong verbs-actions such as Register and Withdraw, you may infer the existence of a Registration and a Withdrawal entities.
+                Avoid treating implementation details (e.g., UI, buttons, delivery channels) as entities.
+                Group related data or actions under meaningful domain concepts (e.g., Examination includes notes and findings).
+                Clearly distinguish between entities, attributes, and associations.
+                """;
         String gptResponse = callOpenAiForDomainObjects(text, userPrompt);
         return parseGptResponse(gptResponse);
     }
@@ -39,7 +47,14 @@ public class UseCaseService {
             String text = extractTextFromPDF(file.getInputStream());
             String userPrompt = (customPrompt != null && !customPrompt.isBlank())
                     ? customPrompt
-                    : "Extract the key domain objects (nouns) and important actions (verbs) from the following text.";
+                    : """
+                    From the functional requirements below, identify the domain entities (a.k.a. domain objects) for an information system.
+                    Include both explicitly mentioned entities\s
+                    Include implicitly required ones. For example, if “doctors write examination notes,” you may infer the existence of an Examination entity, or for example from some strong verbs-actions such as Register and Withdraw, you may infer the existence of a Registration and a Withdrawal entities.
+                    Avoid treating implementation details (e.g., UI, buttons, delivery channels) as entities.
+                    Group related data or actions under meaningful domain concepts (e.g., Examination includes notes and findings).
+                    Clearly distinguish between entities, attributes, and associations.
+                    """;
             String gptResponse = callOpenAiForDomainObjects(text, userPrompt);
             return parseGptResponse(gptResponse);
         } catch (Exception e) {
@@ -57,14 +72,21 @@ public class UseCaseService {
 
     private String callOpenAiForDomainObjects(String text, String userPrompt) {
         System.err.println("Reached service");
-        String prompt = userPrompt + "\nReturn valid JSON only (do not include any markdown formatting) in the following format:\n\n" +
-                "{\n" +
-                "  \"domainObjects\": [\"object1\", \"object2\"],\n" +
-                "  \"suggestedDomainObjects\": [\"suggestion1\", \"suggestion2\"],\n" +
-                "  \"actions\": [\"action1\", \"action2\"],\n" +
-                "  \"suggestedActions\": [\"suggestion1\", \"suggestion2\"]\n" +
-                "}\n\n" +
-                "Text:\n" + text;
+        String prompt = userPrompt
+                + "\nReturn valid JSON only (do not include any markdown formatting) in the following format:\n\n"
+                + "{\n"
+                + "  \"domainObjects\": {\n"
+                + "    \"domain object 1\": [\"attribute1\", \"attribute2\", \"attribute3\"],\n"
+                + "    \"domain object 2\": [\"attribute1\", \"attribute2\"],\n"
+                + "    \"domain object n\": [\"attribute1\", \"attribute2\", \"attribute3\", \"attribute4\"]\n"
+                + "  },\n"
+                + "  \"suggestedDomainObjects\": {\n"
+                + "    \"domain object 1\": [\"attribute1\", \"attribute2\", \"attribute3\"],\n"
+                + "    \"domain object 2\": [\"attribute1\", \"attribute2\"],\n"
+                + "    \"domain object n\": [\"attribute1\", \"attribute2\", \"attribute3\", \"attribute4\"]\n"
+                + "  }\n"
+                + "}\n\n"
+                + "Text:\n" + text;
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
@@ -82,24 +104,20 @@ public class UseCaseService {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode root = objectMapper.readTree(cleanedResponse);
 
-            List<String> domainObjects = objectMapper.convertValue(
-                    root.get("domainObjects"), new TypeReference<>() {
-                    });
-            List<String> suggestedDomainObjects = objectMapper.convertValue(
-                    root.get("suggestedDomainObjects"), new TypeReference<>() {
-                    });
-            List<String> actions = objectMapper.convertValue(
-                    root.get("actions"), new TypeReference<>() {
-                    });
-            List<String> suggestedActions = objectMapper.convertValue(
-                    root.get("suggestedActions"), new TypeReference<>() {
-                    });
+            Map<String, List<String>> domainObjects = objectMapper.convertValue(
+                    root.get("domainObjects"),
+                    new TypeReference<>() {
+                    }
+            );
 
+            Map<String, List<String>> suggestedDomainObjects = objectMapper.convertValue(
+                    root.get("suggestedDomainObjects"),
+                    new TypeReference<>() {
+                    }
+            );
             UseCaseDTO dto = new UseCaseDTO();
             dto.setDomainObjects(domainObjects);
             dto.setSuggestedDomainObjects(suggestedDomainObjects);
-            dto.setActions(actions);
-            dto.setSuggestedActions(suggestedActions);
             return dto;
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse GPT response: " + cleanedResponse, e);

@@ -31,13 +31,11 @@ public class WebConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Allow your frontend origin
         configuration.setAllowedOrigins(List.of("http://localhost:5173",
                 "https://spec2testfe-production.up.railway.app"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
-        // Optionally set a max age (in seconds)
         configuration.setMaxAge(604800L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
