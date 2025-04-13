@@ -1,10 +1,13 @@
 package com.spec2test.application.project.dto;
 
+import java.time.Instant;
 import java.util.UUID;
 
 public record ProjectDto(
         UUID id,
         String name,
-        String description
+        String description,
+        Instant createdAt,
+        Instant updatedAt
 ) {
 }
