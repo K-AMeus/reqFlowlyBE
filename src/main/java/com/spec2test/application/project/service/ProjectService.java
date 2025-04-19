@@ -12,7 +12,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -43,8 +42,6 @@ public class ProjectService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.PROJECT_NOT_FOUND));
 
         projectMapper.updateProject(project, req);
-        project.setUpdatedAt(Instant.now());
-
         project = projectRepository.save(project);
         return projectMapper.toResponseDto(project);
     }

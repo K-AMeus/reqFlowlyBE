@@ -1,4 +1,4 @@
-package com.spec2test.application.project.model;
+package com.spec2test.application.domainObject.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,46 +11,40 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-public class Project {
+public class DomainObject {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
-    private String userId;
+    private UUID Id;
+
+    private UUID projectId;
     private String name;
-    private String description;
     @CreationTimestamp
     private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;
 
+    public DomainObject() {
+    }
 
-    public Project(UUID id, String userId, String name, String description, Instant createdAt, Instant updatedAt) {
-        this.id = id;
-        this.userId = userId;
+    public DomainObject(UUID id, UUID projectId, String name, Instant createdAt, Instant updatedAt) {
+        Id = id;
+        this.projectId = projectId;
         this.name = name;
-        this.description = description;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public Project() {
-    }
-
     public UUID getId() {
-        return id;
+        return Id;
     }
 
-    public String getUserId() {
-        return userId;
+    public UUID getProjectId() {
+        return projectId;
     }
 
     public String getName() {
         return name;
-    }
-
-    public String getDescription() {
-        return description;
     }
 
     public Instant getCreatedAt() {
@@ -62,19 +56,15 @@ public class Project {
     }
 
     public void setId(UUID id) {
-        this.id = id;
+        Id = id;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setProjectId(UUID projectId) {
+        this.projectId = projectId;
     }
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public void setCreatedAt(Instant createdAt) {
