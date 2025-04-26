@@ -26,36 +26,44 @@ public class UseCaseService {
 
     private final OpenAIClient openaiClient;
 
+    private static final String DEFAULT_DOMAIN_EXTRACTION_PROMPT = """
+            From the functional requirements below, identify the domain entities (a.k.a. domain objects) for an information system.
+            Include both explicitly mentioned entities\s
+            Include implicitly required ones. For example, if "doctors write examination notes," you may infer the existence of an Examination entity, or for example from some strong verbs-actions such as Register and Withdraw, you may infer the existence of a Registration and a Withdrawal entities.
+            Avoid treating implementation details (e.g., UI, buttons, delivery channels) as entities.
+            Group related data or actions under meaningful domain concepts (e.g., Examination includes notes and findings).
+            Clearly distinguish between entities, attributes, and associations.
+            """;
+
+    private static final String JSON_FORMAT_INSTRUCTION = """
+            
+            Return valid JSON only (do not include any markdown formatting) in the following format:
+            
+            {
+              "domainObjects": {
+                "domain object 1": ["attribute1", "attribute2", "attribute3"],
+                "domain object 2": ["attribute1", "attribute2"],
+                "domain object n": ["attribute1", "attribute2", "attribute3", "attribute4"]
+              },
+              "suggestedDomainObjects": {
+                "domain object 1": ["attribute1", "attribute2", "attribute3"],
+                "domain object 2": ["attribute1", "attribute2"],
+                "domain object n": ["attribute1", "attribute2", "attribute3", "attribute4"]
+              }
+            }
+            
+            """;
+
     public UseCaseDTO processUseCaseText(UseCaseReq req) {
         String text = req.getDescription();
-        String userPrompt = (req.getCustomPrompt() != null && !req.getCustomPrompt().isBlank())
-                ? req.getCustomPrompt()
-                : """
-                From the functional requirements below, identify the domain entities (a.k.a. domain objects) for an information system.
-                Include both explicitly mentioned entities\s
-                Include implicitly required ones. For example, if “doctors write examination notes,” you may infer the existence of an Examination entity, or for example from some strong verbs-actions such as Register and Withdraw, you may infer the existence of a Registration and a Withdrawal entities.
-                Avoid treating implementation details (e.g., UI, buttons, delivery channels) as entities.
-                Group related data or actions under meaningful domain concepts (e.g., Examination includes notes and findings).
-                Clearly distinguish between entities, attributes, and associations.
-                """;
-        String gptResponse = callOpenAiForDomainObjects(text, userPrompt);
+        String gptResponse = callOpenAiForDomainObjects(text, req.getCustomPrompt());
         return parseGptResponse(gptResponse);
     }
 
     public UseCaseDTO processUseCaseFile(MultipartFile file, String customPrompt) {
         try {
             String text = extractTextFromPDF(file.getInputStream());
-            String userPrompt = (customPrompt != null && !customPrompt.isBlank())
-                    ? customPrompt
-                    : """
-                    From the functional requirements below, identify the domain entities (a.k.a. domain objects) for an information system.
-                    Include both explicitly mentioned entities\s
-                    Include implicitly required ones. For example, if “doctors write examination notes,” you may infer the existence of an Examination entity, or for example from some strong verbs-actions such as Register and Withdraw, you may infer the existence of a Registration and a Withdrawal entities.
-                    Avoid treating implementation details (e.g., UI, buttons, delivery channels) as entities.
-                    Group related data or actions under meaningful domain concepts (e.g., Examination includes notes and findings).
-                    Clearly distinguish between entities, attributes, and associations.
-                    """;
-            String gptResponse = callOpenAiForDomainObjects(text, userPrompt);
+            String gptResponse = callOpenAiForDomainObjects(text, customPrompt);
             return parseGptResponse(gptResponse);
         } catch (Exception e) {
             throw new RuntimeException("Error processing PDF file", e);
@@ -70,23 +78,17 @@ public class UseCaseService {
         }
     }
 
-    private String callOpenAiForDomainObjects(String text, String userPrompt) {
-        System.err.println("Reached service");
-        String prompt = userPrompt
-                + "\nReturn valid JSON only (do not include any markdown formatting) in the following format:\n\n"
-                + "{\n"
-                + "  \"domainObjects\": {\n"
-                + "    \"domain object 1\": [\"attribute1\", \"attribute2\", \"attribute3\"],\n"
-                + "    \"domain object 2\": [\"attribute1\", \"attribute2\"],\n"
-                + "    \"domain object n\": [\"attribute1\", \"attribute2\", \"attribute3\", \"attribute4\"]\n"
-                + "  },\n"
-                + "  \"suggestedDomainObjects\": {\n"
-                + "    \"domain object 1\": [\"attribute1\", \"attribute2\", \"attribute3\"],\n"
-                + "    \"domain object 2\": [\"attribute1\", \"attribute2\"],\n"
-                + "    \"domain object n\": [\"attribute1\", \"attribute2\", \"attribute3\", \"attribute4\"]\n"
-                + "  }\n"
-                + "}\n\n"
-                + "Text:\n" + text;
+    private String callOpenAiForDomainObjects(String text, String customPrompt) {
+        String prompt;
+
+        if (customPrompt != null && !customPrompt.isBlank()) {
+            prompt = DEFAULT_DOMAIN_EXTRACTION_PROMPT +
+                    "\n\nAdditional instructions: " + customPrompt;
+        } else {
+            prompt = DEFAULT_DOMAIN_EXTRACTION_PROMPT;
+        }
+
+        prompt += JSON_FORMAT_INSTRUCTION + "Text:\n" + text;
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
@@ -144,7 +146,4 @@ public class UseCaseService {
 
         return cleaned;
     }
-
-
-
 }

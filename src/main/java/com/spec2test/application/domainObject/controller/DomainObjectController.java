@@ -1,8 +1,6 @@
 package com.spec2test.application.domainObject.controller;
 
-import com.spec2test.application.domainObject.dto.DomainObjectCreateRequestDto;
-import com.spec2test.application.domainObject.dto.DomainObjectCreateResponseDto;
-import com.spec2test.application.domainObject.dto.DomainObjectDto;
+import com.spec2test.application.domainObject.dto.*;
 import com.spec2test.application.domainObject.service.DomainObjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,8 +19,8 @@ public class DomainObjectController {
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
-    public DomainObjectCreateResponseDto createDomainObject(@PathVariable UUID projectId, @RequestBody DomainObjectCreateRequestDto req) {
-        return domainObjectService.createDomainObject(projectId, req);
+    public DomainObjectsCreateResponseDto createDomainObjects(@PathVariable UUID projectId, @RequestBody DomainObjectsCreateRequestDto req) {
+        return domainObjectService.createDomainObjects(projectId, req);
     }
 
     @GetMapping("/{domainObjectId}")

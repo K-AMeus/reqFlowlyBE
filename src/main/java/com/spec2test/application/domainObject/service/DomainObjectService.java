@@ -2,11 +2,11 @@ package com.spec2test.application.domainObject.service;
 
 import com.spec2test.application.common.exception.ErrorCode;
 import com.spec2test.application.common.exception.InvalidStateException;
-import com.spec2test.application.domainObject.dto.DomainObjectCreateRequestDto;
-import com.spec2test.application.domainObject.dto.DomainObjectCreateResponseDto;
-import com.spec2test.application.domainObject.dto.DomainObjectDto;
+import com.spec2test.application.domainObject.dto.*;
 import com.spec2test.application.domainObject.mapper.DomainObjectMapper;
 import com.spec2test.application.domainObject.model.DomainObject;
+import com.spec2test.application.domainObject.model.DomainObjectAttribute;
+import com.spec2test.application.domainObject.repository.DomainObjectAttributeRepository;
 import com.spec2test.application.domainObject.repository.DomainObjectRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -14,20 +14,90 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class DomainObjectService {
 
     private final DomainObjectRepository domainObjectRepository;
-
+    private final DomainObjectAttributeRepository domainObjectAttributeRepository;
     private final DomainObjectMapper domainObjectMapper;
 
-    public DomainObjectCreateResponseDto createDomainObject(UUID projectId, DomainObjectCreateRequestDto req) {
-        DomainObject newDomainObject = domainObjectMapper.toEntity(req);
-        newDomainObject.setProjectId(projectId);
-        return domainObjectMapper.toCreateResponse(domainObjectRepository.save(newDomainObject));
+    @Transactional
+    public DomainObjectsCreateResponseDto createDomainObjects(UUID projectId, DomainObjectsCreateRequestDto req) {
+        // Create domain objects
+        List<DomainObject> domainObjects = new ArrayList<>();
+        Map<String, DomainObject> nameToEntityDomainObjects = new HashMap<>();
+
+        for (String domainObjectName : req.domainObjectsWithAttributes().keySet()) {
+            DomainObject newDomainObject = new DomainObject();
+            newDomainObject.setProjectId(projectId);
+            newDomainObject.setName(domainObjectName);
+            domainObjects.add(newDomainObject);
+            nameToEntityDomainObjects.put(domainObjectName, newDomainObject);
+        }
+
+        List<DomainObject> savedDomainObjects = domainObjectRepository.saveAll(domainObjects);
+
+        // Create attributes
+        List<DomainObjectAttribute> domainObjectAttributes = new ArrayList<>();
+        Map<UUID, List<DomainObjectAttribute>> domainObjectIdToAttributes = new HashMap<>();
+
+        for (Map.Entry<String, List<DomainObjectAttributeCreateRequestDto>> entry : req.domainObjectsWithAttributes().entrySet()) {
+            DomainObject savedDomainObject = nameToEntityDomainObjects.get(entry.getKey());
+            List<DomainObjectAttribute> domainAttributes = new ArrayList<>();
+
+            if (entry.getValue() != null && !entry.getValue().isEmpty()) {
+                for (DomainObjectAttributeCreateRequestDto attributeDto : entry.getValue()) {
+                    DomainObjectAttribute attribute = new DomainObjectAttribute();
+                    attribute.setName(attributeDto.name());
+                    attribute.setDataType(attributeDto.dataType());
+                    attribute.setDomainObjectId(savedDomainObject.getId());
+                    domainObjectAttributes.add(attribute);
+                    domainAttributes.add(attribute);
+                }
+                domainObjectIdToAttributes.put(savedDomainObject.getId(), domainAttributes);
+            }
+        }
+
+        List<DomainObjectAttribute> savedAttributes = domainObjectAttributeRepository.saveAll(domainObjectAttributes);
+
+        Map<UUID, List<DomainObjectAttribute>> savedDomainIdToAttributes = new HashMap<>();
+        for (DomainObjectAttribute attr : savedAttributes) {
+            savedDomainIdToAttributes
+                    .computeIfAbsent(attr.getDomainObjectId(), k -> new ArrayList<>())
+                    .add(attr);
+        }
+
+        List<DomainObjectResponseDto> domainObjectResponses = new ArrayList<>();
+
+        for (DomainObject domainObject : savedDomainObjects) {
+            List<DomainObjectAttribute> attributes =
+                    savedDomainIdToAttributes.getOrDefault(domainObject.getId(), Collections.emptyList());
+
+            List<DomainObjectAttributeCreateResponseDto> attributeResponses = attributes.stream()
+                    .map(attr -> new DomainObjectAttributeCreateResponseDto(
+                            attr.getId(),
+                            attr.getDomainObjectId(),
+                            attr.getName(),
+                            attr.getDataType(),
+                            attr.getCreatedAt(),
+                            attr.getUpdatedAt()
+                    ))
+                    .collect(Collectors.toList());
+
+            domainObjectResponses.add(new DomainObjectResponseDto(
+                    domainObject.getId(),
+                    domainObject.getName(),
+                    domainObject.getCreatedAt(),
+                    domainObject.getUpdatedAt(),
+                    attributeResponses
+            ));
+        }
+
+        return new DomainObjectsCreateResponseDto(domainObjectResponses);
     }
 
     public DomainObjectDto getDomainObject(UUID projectId, UUID domainObjectId) {
