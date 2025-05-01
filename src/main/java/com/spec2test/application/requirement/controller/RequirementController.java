@@ -9,6 +9,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.UUID;
 
@@ -19,10 +20,16 @@ public class RequirementController {
     private final RequirementService requirementService;
 
 
-    @PostMapping
+    @PostMapping("/text")
     @PreAuthorize("hasRole('USER')")
-    public RequirementCreateResponseDto createRequirement(@PathVariable UUID projectId, @RequestBody RequirementCreateRequestDto req) {
-        return requirementService.createRequirement(projectId, req);
+    public RequirementCreateResponseDto createTextRequirement(@PathVariable UUID projectId, @RequestBody RequirementCreateRequestDto req) {
+        return requirementService.createTextRequirement(projectId, req);
+    }
+
+    @PostMapping("/pdf")
+    @PreAuthorize("hasRole('USER')")
+    public RequirementCreateResponseDto createPdfRequirement(@PathVariable UUID projectId, @RequestParam("file") MultipartFile file, @RequestPart("metadata") RequirementCreateRequestDto req) {
+        return requirementService.createPdfRequirement(file, projectId, req);
     }
 
     @GetMapping("/{requirementId}")

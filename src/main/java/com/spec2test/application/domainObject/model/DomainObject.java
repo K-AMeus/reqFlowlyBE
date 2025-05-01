@@ -18,6 +18,7 @@ public class DomainObject {
     private UUID Id;
 
     private UUID projectId;
+    private UUID requirementId;
     private String name;
     @CreationTimestamp
     private Instant createdAt;
@@ -27,9 +28,10 @@ public class DomainObject {
     public DomainObject() {
     }
 
-    public DomainObject(UUID id, UUID projectId, String name, Instant createdAt, Instant updatedAt) {
+    public DomainObject(UUID id, UUID projectId, UUID requirementId, String name, Instant createdAt, Instant updatedAt) {
         Id = id;
         this.projectId = projectId;
+        this.requirementId = requirementId;
         this.name = name;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -41,6 +43,10 @@ public class DomainObject {
 
     public UUID getProjectId() {
         return projectId;
+    }
+
+    public UUID getRequirementId() {
+        return requirementId;
     }
 
     public String getName() {
@@ -61,6 +67,10 @@ public class DomainObject {
 
     public void setProjectId(UUID projectId) {
         this.projectId = projectId;
+    }
+
+    public void setRequirementId(UUID requirementId) {
+        this.requirementId = requirementId;
     }
 
     public void setName(String name) {

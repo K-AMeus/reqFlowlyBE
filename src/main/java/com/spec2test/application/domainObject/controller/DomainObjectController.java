@@ -3,8 +3,6 @@ package com.spec2test.application.domainObject.controller;
 import com.spec2test.application.domainObject.dto.*;
 import com.spec2test.application.domainObject.service.DomainObjectService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,15 +10,15 @@ import java.util.UUID;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/domain-object-service/v1/projects/{projectId}/domain-objects")
+@RequestMapping("/api/domain-object-service/v1/projects/{projectId}")
 public class DomainObjectController {
 
     private final DomainObjectService domainObjectService;
 
-    @PostMapping
+    @PostMapping("/requirements/{requirementId}/domain-objects")
     @PreAuthorize("hasRole('USER')")
-    public DomainObjectsCreateResponseDto createDomainObjects(@PathVariable UUID projectId, @RequestBody DomainObjectsCreateRequestDto req) {
-        return domainObjectService.createDomainObjects(projectId, req);
+    public DomainObjectsCreateResponseDto createDomainObjectsWithAttributes(@PathVariable UUID projectId, @PathVariable UUID requirementId, @RequestBody DomainObjectsCreateRequestDto req) {
+        return domainObjectService.createDomainObjects(projectId, requirementId, req);
     }
 
     @GetMapping("/{domainObjectId}")
@@ -29,21 +27,26 @@ public class DomainObjectController {
         return domainObjectService.getDomainObject(projectId, domainObjectId);
     }
 
-    @GetMapping
-    @PreAuthorize("hasRole('USER')")
-    public Page<DomainObjectDto> getAllDomainObjects(@PathVariable UUID projectId, Pageable pageable) {
-        return domainObjectService.getAllDomainObjects(projectId, pageable);
+    // @GetMapping
+    // @PreAuthorize("hasRole('USER')")
+    // public Page<DomainObjectDto> getAllDomainObjects(@PathVariable UUID projectId, UUID requirementId, Pageable pageable) {
+    //     return domainObjectService.getAllDomainObjects(projectId, requirementId, pageable);
+    // }
+    
+    @GetMapping("/domain-objects")
+    public DomainObjectsWithAttributesResponseDto getAllDomainObjectsWithAttributes(@PathVariable UUID projectId) {
+        return domainObjectService.getAllDomainObjectsWithAttributes(projectId);
     }
 
-    @PutMapping("/{domainObjectId}")
+    @PutMapping("/requirements/{requirementId}/domain-objects/{domainObjectId}")
     @PreAuthorize("hasRole('USER')")
-    public DomainObjectCreateResponseDto updateDomainObject(@PathVariable UUID projectId, @PathVariable UUID domainObjectId, @RequestBody DomainObjectCreateRequestDto req) {
+    public DomainObjectCreateResponseDto updateDomainObject(@PathVariable UUID projectId, @PathVariable UUID requirementId, @PathVariable UUID domainObjectId, @RequestBody DomainObjectCreateRequestDto req) {
         return domainObjectService.updateDomainObject(projectId, domainObjectId, req);
     }
 
-    @DeleteMapping("/{domainObjectId}")
+    @DeleteMapping("/requirements/{requirementId}/domain-objects/{domainObjectId}")
     @PreAuthorize("hasRole('USER')")
-    public void deleteDomainObject(@PathVariable UUID projectId, @PathVariable UUID domainObjectId) {
+    public void deleteDomainObject(@PathVariable UUID projectId, @PathVariable UUID requirementId, @PathVariable UUID domainObjectId) {
         domainObjectService.deleteDomainObject(projectId, domainObjectId);
     }
 }

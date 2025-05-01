@@ -26,7 +26,7 @@ public class DomainObjectService {
     private final DomainObjectMapper domainObjectMapper;
 
     @Transactional
-    public DomainObjectsCreateResponseDto createDomainObjects(UUID projectId, DomainObjectsCreateRequestDto req) {
+    public DomainObjectsCreateResponseDto createDomainObjects(UUID projectId, UUID requirementId, DomainObjectsCreateRequestDto req) {
         // Create domain objects
         List<DomainObject> domainObjects = new ArrayList<>();
         Map<String, DomainObject> nameToEntityDomainObjects = new HashMap<>();
@@ -35,6 +35,7 @@ public class DomainObjectService {
             DomainObject newDomainObject = new DomainObject();
             newDomainObject.setProjectId(projectId);
             newDomainObject.setName(domainObjectName);
+            newDomainObject.setRequirementId(requirementId);
             domainObjects.add(newDomainObject);
             nameToEntityDomainObjects.put(domainObjectName, newDomainObject);
         }
@@ -105,8 +106,8 @@ public class DomainObjectService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.DOMAIN_OBJECT_NOT_FOUND)));
     }
 
-    public Page<DomainObjectDto> getAllDomainObjects(UUID projectId, Pageable pageable) {
-        return domainObjectRepository.findAllByProjectId(projectId, pageable)
+    public Page<DomainObjectDto> getAllDomainObjects(UUID projectId, UUID requirementId, Pageable pageable) {
+        return domainObjectRepository.findAllByProjectIdAndRequirementId(projectId, requirementId, pageable)
                 .map(domainObjectMapper::toDto);
     }
 
@@ -125,6 +126,51 @@ public class DomainObjectService {
         domainObjectRepository.findByProjectIdAndId(projectId, domainObjectId)
                         .orElseThrow(() -> new InvalidStateException(ErrorCode.DOMAIN_OBJECT_NOT_FOUND));
         domainObjectRepository.deleteByProjectIdAndId(projectId, domainObjectId);
+    }
+
+
+    @Transactional
+    public DomainObjectsWithAttributesResponseDto getAllDomainObjectsWithAttributes(UUID projectId) {
+        // Fetch all domain objects for the project
+        List<DomainObject> domainObjects = domainObjectRepository.findAllByProjectId(projectId);
+        
+        if (domainObjects.isEmpty()) {
+            return new DomainObjectsWithAttributesResponseDto(Collections.emptyMap());
+        }
+        
+        // Collect all domain object IDs
+        List<UUID> domainObjectIds = domainObjects.stream()
+                .map(DomainObject::getId)
+                .collect(Collectors.toList());
+        
+        // Fetch all attributes for these domain objects
+        List<DomainObjectAttribute> allAttributes = domainObjectAttributeRepository.findAllByDomainObjectIdIn(domainObjectIds);
+        
+        // Group attributes by domain object ID
+        Map<UUID, List<DomainObjectAttribute>> attributesByDomainObjectId = allAttributes.stream()
+                .collect(Collectors.groupingBy(DomainObjectAttribute::getDomainObjectId));
+        
+        // Create a map of domain object names to their attributes
+        Map<String, List<DomainObjectAttributeDto>> result = new HashMap<>();
+        
+        for (DomainObject domainObject : domainObjects) {
+            List<DomainObjectAttributeDto> attributeDtos = attributesByDomainObjectId
+                    .getOrDefault(domainObject.getId(), Collections.emptyList())
+                    .stream()
+                    .map(attr -> new DomainObjectAttributeDto(
+                            attr.getId(),
+                            attr.getDomainObjectId(),
+                            attr.getName(),
+                            attr.getDataType(),
+                            attr.getCreatedAt(),
+                            attr.getUpdatedAt()
+                    ))
+                    .collect(Collectors.toList());
+            
+            result.put(domainObject.getName(), attributeDtos);
+        }
+        
+        return new DomainObjectsWithAttributesResponseDto(result);
     }
 
 }
