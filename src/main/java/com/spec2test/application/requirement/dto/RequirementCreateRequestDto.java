@@ -6,6 +6,5 @@ public record RequirementCreateRequestDto(
         String sourceType,
         String sourceContent,
         String sourceFileUrl
-
 ) {
 }

@@ -1,11 +1,11 @@
-package com.spec2test.application.useCase.dto;
+package com.spec2test.application.domainObject.dto;
 
 import lombok.Data;
 import java.util.List;
 import java.util.Map;
 
 @Data
-public class UseCaseDTO {
+public class DomainObjectGenerationDto {
     private Map<String, List<String>> domainObjects;
     private Map<String, List<String>> suggestedDomainObjects;
 }

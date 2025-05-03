@@ -7,7 +7,6 @@ public record DomainObjectAttributeDto(
         UUID id,
         UUID domainObjectId,
         String name,
-        String dataType,
         Instant createdAt,
         Instant updatedAt
 ) {

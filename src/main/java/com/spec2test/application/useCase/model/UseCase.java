@@ -1,4 +1,4 @@
-package com.spec2test.application.domainObject.model;
+package com.spec2test.application.useCase.model;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,40 +11,45 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-public class DomainObjectAttribute {
+public class UseCase {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
-    private UUID domainObjectId;
     private String name;
+    private String content;
+    private UUID requirementId;
     @CreationTimestamp
     private Instant createdAt;
     @UpdateTimestamp
     private Instant updatedAt;
 
-
-    public DomainObjectAttribute() {
-    }
-
-    public DomainObjectAttribute(UUID id, UUID domainObjectId, String name, Instant createdAt, Instant updatedAt) {
+    public UseCase(UUID id, String name, String content, UUID requirementId, Instant createdAt, Instant updatedAt) {
         this.id = id;
-        this.domainObjectId = domainObjectId;
         this.name = name;
+        this.content = content;
+        this.requirementId = requirementId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+    }
+
+    public UseCase() {
     }
 
     public UUID getId() {
         return id;
     }
 
-    public UUID getDomainObjectId() {
-        return domainObjectId;
-    }
-
     public String getName() {
         return name;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public UUID getRequirementId() {
+        return requirementId;
     }
 
     public Instant getCreatedAt() {
@@ -59,12 +64,16 @@ public class DomainObjectAttribute {
         this.id = id;
     }
 
-    public void setDomainObjectId(UUID domainObjectId) {
-        this.domainObjectId = domainObjectId;
-    }
-
     public void setName(String name) {
         this.name = name;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public void setRequirementId(UUID requirementId) {
+        this.requirementId = requirementId;
     }
 
     public void setCreatedAt(Instant createdAt) {

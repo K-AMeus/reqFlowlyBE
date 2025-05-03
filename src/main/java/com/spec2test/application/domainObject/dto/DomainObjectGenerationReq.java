@@ -1,11 +1,9 @@
-package com.spec2test.application.useCase.dto;
+package com.spec2test.application.domainObject.dto;
 
 import lombok.Data;
 
 @Data
-public class UseCaseReq {
+public class DomainObjectGenerationReq {
     private String description;
-
-    // todo: remove
     private String customPrompt;
 }

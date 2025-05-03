@@ -54,7 +54,6 @@ public class DomainObjectService {
                 for (DomainObjectAttributeCreateRequestDto attributeDto : entry.getValue()) {
                     DomainObjectAttribute attribute = new DomainObjectAttribute();
                     attribute.setName(attributeDto.name());
-                    attribute.setDataType(attributeDto.dataType());
                     attribute.setDomainObjectId(savedDomainObject.getId());
                     domainObjectAttributes.add(attribute);
                     domainAttributes.add(attribute);
@@ -83,7 +82,6 @@ public class DomainObjectService {
                             attr.getId(),
                             attr.getDomainObjectId(),
                             attr.getName(),
-                            attr.getDataType(),
                             attr.getCreatedAt(),
                             attr.getUpdatedAt()
                     ))
@@ -161,7 +159,6 @@ public class DomainObjectService {
                             attr.getId(),
                             attr.getDomainObjectId(),
                             attr.getName(),
-                            attr.getDataType(),
                             attr.getCreatedAt(),
                             attr.getUpdatedAt()
                     ))
