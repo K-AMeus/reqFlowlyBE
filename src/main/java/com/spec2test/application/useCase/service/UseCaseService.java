@@ -9,6 +9,7 @@ import com.spec2test.application.common.exception.InvalidStateException;
 import com.spec2test.application.requirement.repository.RequirementRepository;
 import com.spec2test.application.useCase.dto.UseCaseCreateReqDto;
 import com.spec2test.application.useCase.dto.UseCaseCreateResDto;
+import com.spec2test.application.useCase.dto.UseCaseDto;
 import com.spec2test.application.useCase.mapper.UseCaseMapper;
 import com.spec2test.application.useCase.model.UseCase;
 import com.spec2test.application.useCase.repository.UseCaseRepository;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,7 +51,7 @@ public class UseCaseService {
         log.info("AI response: {}", aiResponse);
 
         UseCase useCase = new UseCase();
-        useCase.setName(domainObjects + " Use Cases");
+        useCase.setName(domainObjects);
         useCase.setContent(aiResponse);
         useCase.setRequirementId(requirementId);
         useCase.setCreatedAt(Instant.now());
@@ -58,7 +60,7 @@ public class UseCaseService {
         UseCase savedUseCase = useCaseRepository.save(useCase);
         log.info("Saved use case with name: {}", savedUseCase.getName());
         
-        // Return as a list for API consistency
+        // Todo: change: Return as a list for API consistency
         List<UseCaseCreateResDto> result = new ArrayList<>();
         result.add(new UseCaseCreateResDto(savedUseCase.getId(), savedUseCase.getName(), savedUseCase.getContent()));
         return result;
@@ -79,4 +81,43 @@ public class UseCaseService {
 
         return chatCompletion.choices().getFirst().message().content().orElse("");
     }
+
+
+    public List<UseCaseCreateResDto> getUseCases(UUID projectId, UUID requirementId) {
+        requirementRepository.findByProjectIdAndId(projectId, requirementId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
+
+        List<UseCase> useCases = useCaseRepository.findAllByRequirementId(requirementId);
+        return useCases.stream()
+                .map(useCaseMapper::toDto)
+                .collect(Collectors.toList());
+    }
+
+
+    public UseCaseCreateResDto updateUseCase(UUID projectId, UUID requirementId, UUID useCaseId, UseCaseDto req) {
+        requirementRepository.findByProjectIdAndId(projectId, requirementId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
+
+        UseCase useCase = useCaseRepository.findByIdAndRequirementId(useCaseId, requirementId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.USE_CASE_NOT_FOUND));
+
+        useCaseMapper.updateUseCase(useCase, req);
+        useCase = useCaseRepository.save(useCase);
+        return useCaseMapper.toDto(useCase);
+    }
+
+
+    public void deleteUseCase(UUID projectId, UUID requirementId, UUID useCaseId) {
+        requirementRepository.findByProjectIdAndId(projectId, requirementId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
+
+        UseCase useCase = useCaseRepository.findByIdAndRequirementId(useCaseId, requirementId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.USE_CASE_NOT_FOUND));
+
+        useCaseRepository.delete(useCase);
+
+
+    }
+
+
 }

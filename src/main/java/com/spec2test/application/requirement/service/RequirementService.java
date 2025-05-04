@@ -14,11 +14,15 @@ import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -56,7 +60,16 @@ public class RequirementService {
     }
 
     public Page<RequirementDto> getAllRequirements(UUID projectId, Pageable pageable) {
-        return requirementRepository.findAllByProjectId(projectId, pageable)
+        return requirementRepository.findAllByProjectIdOrderByUpdatedAtDesc(projectId, pageable)
+                .map(requirementMapper::toDto);
+    }
+    
+
+    public Page<RequirementDto> findRequirementsByIdsAndProject(UUID projectId, List<UUID> requirementIds, Pageable pageable) {
+        if (CollectionUtils.isEmpty(requirementIds)) {
+            return new PageImpl<>(Collections.emptyList(), pageable, 0);
+        }
+        return requirementRepository.findAllByProjectIdAndIdInOrderByUpdatedAtDesc(projectId, requirementIds, pageable)
                 .map(requirementMapper::toDto);
     }
 

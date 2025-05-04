@@ -1,9 +1,9 @@
 package com.spec2test.application.domainObject.repository;
 
 import com.spec2test.application.domainObject.model.DomainObject;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,9 +15,10 @@ public interface DomainObjectRepository extends JpaRepository<DomainObject, UUID
 
     Optional<DomainObject> findByProjectIdAndId(UUID projectId, UUID id);
 
-    Page<DomainObject> findAllByProjectIdAndRequirementId(UUID projectId, UUID requirementId, Pageable pageable);
-
-    List<DomainObject> findAllByProjectId(UUID projectId);
+    List<DomainObject> findAllByProjectIdAndRequirementId(UUID projectId, UUID requirementId);
 
     void deleteByProjectIdAndId(UUID projectId, UUID id);
+
+    @Query("SELECT DISTINCT d.requirementId FROM DomainObject d where d.projectId = :projectId")
+    List<UUID> findDistinctRequirementIdsByProjectId(@Param("projectId") UUID projectId);
 }

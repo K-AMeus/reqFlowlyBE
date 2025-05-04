@@ -1,5 +1,6 @@
 package com.spec2test.application.requirement.controller;
 
+import com.spec2test.application.domainObject.service.DomainObjectService;
 import com.spec2test.application.requirement.dto.RequirementCreateRequestDto;
 import com.spec2test.application.requirement.dto.RequirementCreateResponseDto;
 import com.spec2test.application.requirement.dto.RequirementDto;
@@ -11,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -18,6 +20,7 @@ import java.util.UUID;
 @RequestMapping("/api/requirement-service/v1/projects/{projectId}/requirements")
 public class RequirementController {
     private final RequirementService requirementService;
+    private final DomainObjectService domainObjectService;
 
 
     @PostMapping("/text")
@@ -42,6 +45,13 @@ public class RequirementController {
     @PreAuthorize("hasRole('USER')")
     public Page<RequirementDto> getAllRequirements(@PathVariable UUID projectId, Pageable pageable) {
         return requirementService.getAllRequirements(projectId, pageable);
+    }
+
+    @GetMapping("/used")
+    @PreAuthorize("hasRole('USER')")
+    public Page<RequirementDto> getUsedRequirements(@PathVariable UUID projectId, Pageable pageable) {
+        List<UUID> requirementIds = domainObjectService.getDistinctRequirementIdsForProject(projectId);
+        return requirementService.findRequirementsByIdsAndProject(projectId, requirementIds, pageable);
     }
 
     @PutMapping("/{requirementId}")

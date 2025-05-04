@@ -10,8 +10,6 @@ import com.spec2test.application.domainObject.repository.DomainObjectAttributeRe
 import com.spec2test.application.domainObject.repository.DomainObjectRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -104,9 +102,8 @@ public class DomainObjectService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.DOMAIN_OBJECT_NOT_FOUND)));
     }
 
-    public Page<DomainObjectDto> getAllDomainObjects(UUID projectId, UUID requirementId, Pageable pageable) {
-        return domainObjectRepository.findAllByProjectIdAndRequirementId(projectId, requirementId, pageable)
-                .map(domainObjectMapper::toDto);
+    public List<UUID> getDistinctRequirementIdsForProject(UUID projectId) {
+       return domainObjectRepository.findDistinctRequirementIdsByProjectId(projectId);
     }
 
     @Transactional
@@ -128,9 +125,8 @@ public class DomainObjectService {
 
 
     @Transactional
-    public DomainObjectsWithAttributesResponseDto getAllDomainObjectsWithAttributes(UUID projectId) {
-        // Fetch all domain objects for the project
-        List<DomainObject> domainObjects = domainObjectRepository.findAllByProjectId(projectId);
+    public DomainObjectsWithAttributesResponseDto getAllDomainObjectsWithAttributes(UUID projectId, UUID requirementId) {
+        List<DomainObject> domainObjects = domainObjectRepository.findAllByProjectIdAndRequirementId(projectId, requirementId);
         
         if (domainObjects.isEmpty()) {
             return new DomainObjectsWithAttributesResponseDto(Collections.emptyMap());
