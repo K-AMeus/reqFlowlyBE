@@ -2,6 +2,8 @@ package com.spec2test.application.requirement.service;
 
 import com.spec2test.application.common.exception.ErrorCode;
 import com.spec2test.application.common.exception.InvalidStateException;
+import com.spec2test.application.project.model.Project;
+import com.spec2test.application.project.repository.ProjectRepository;
 import com.spec2test.application.requirement.dto.RequirementCreateRequestDto;
 import com.spec2test.application.requirement.dto.RequirementCreateResponseDto;
 import com.spec2test.application.requirement.dto.RequirementDto;
@@ -21,6 +23,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -30,13 +33,18 @@ import java.util.UUID;
 public class RequirementService {
     private final RequirementRepository requirementRepository;
     private final RequirementMapper requirementMapper;
+    private final ProjectRepository projectRepository;
 
+    @Transactional
     public RequirementCreateResponseDto createPdfRequirement(MultipartFile file, UUID projectId, RequirementCreateRequestDto req) {
 
         Requirement newRequirement = requirementMapper.toEntity(req);
         try {
             String text = extractTextFromPDF(file.getInputStream());
+            Project project = projectRepository.findById(projectId)
+                    .orElseThrow(() -> new InvalidStateException(ErrorCode.PROJECT_NOT_FOUND));
             newRequirement.setProjectId(projectId);
+            project.setUpdatedAt(Instant.now());
             newRequirement.setSourceContent(text);
         } catch (Exception e) {
             throw new RuntimeException("Error processing PDF file", e);
@@ -47,12 +55,16 @@ public class RequirementService {
 
     public RequirementCreateResponseDto createTextRequirement(UUID projectId, RequirementCreateRequestDto req) {
         Requirement newRequirement = requirementMapper.toEntity(req);
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.PROJECT_NOT_FOUND));
+
         newRequirement.setProjectId(projectId);
+        project.setUpdatedAt(Instant.now());
+        projectRepository.save(project);
 
         return requirementMapper.toResponseDto(requirementRepository.save(newRequirement));
     }
-
-
 
     public RequirementDto getRequirement(UUID projectId, UUID requirementId) {
         return requirementMapper.toDto(requirementRepository.findByProjectIdAndId(projectId, requirementId)
@@ -78,6 +90,11 @@ public class RequirementService {
         Requirement requirement = requirementRepository.findByProjectIdAndId(projectId, requirementId)
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
 
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.PROJECT_NOT_FOUND));
+
+        project.setUpdatedAt(Instant.now());
+        projectRepository.save(project);
 
         requirementMapper.updateRequirement(requirement, req);
         requirement = requirementRepository.save(requirement);
@@ -88,6 +105,13 @@ public class RequirementService {
     public void deleteRequirement(UUID projectId, UUID requirementId) {
         requirementRepository.findByProjectIdAndId(projectId, requirementId)
                         .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
+
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new InvalidStateException(ErrorCode.PROJECT_NOT_FOUND));
+
+        project.setUpdatedAt(Instant.now());
+        projectRepository.save(project);
+
         requirementRepository.deleteByProjectIdAndId(projectId, requirementId);
     }
 

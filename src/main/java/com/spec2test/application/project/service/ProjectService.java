@@ -9,7 +9,9 @@ import com.spec2test.application.project.repository.ProjectRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -31,8 +33,13 @@ public class ProjectService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.PROJECT_NOT_FOUND)));
     }
 
-    public Page<ProjectDto> getAllProjects(String userId, Pageable pageable) {
-        return projectRepository.findAllByUserIdOrderByUpdatedAtDesc(userId, pageable)
+    public Page<ProjectDto> getAllProjects(String userId, Pageable pageable, ProjectSort sort, Sort.Direction dir) {
+        Pageable sorted = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                sort.toSort(dir));
+
+        return projectRepository.findAllByUserId(userId, sorted)
                 .map(projectMapper::toDto);
     }
 

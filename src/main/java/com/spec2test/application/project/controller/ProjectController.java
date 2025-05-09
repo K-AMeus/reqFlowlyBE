@@ -5,6 +5,7 @@ import com.spec2test.application.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +33,16 @@ public class ProjectController {
 
     @GetMapping
     @PreAuthorize("hasRole('USER')")
-    public Page<ProjectDto> getAllProjects(@AuthenticationPrincipal String userId, Pageable pageable) {
-        return projectService.getAllProjects(userId, pageable);
+    public Page<ProjectDto> getAllProjects(@AuthenticationPrincipal String userId, Pageable pageable,
+            @RequestParam(value = "orderBy", defaultValue = "updatedAt")
+            String orderByParam,
+            @RequestParam(value = "direction", defaultValue = "DESC")
+            String dirParam) {
+
+        ProjectSort orderBy = ProjectSort.from(orderByParam);
+        Sort.Direction direction = Sort.Direction.fromString(dirParam);
+
+        return projectService.getAllProjects(userId, pageable, orderBy, direction);
     }
 
     @PutMapping("/{projectId}")

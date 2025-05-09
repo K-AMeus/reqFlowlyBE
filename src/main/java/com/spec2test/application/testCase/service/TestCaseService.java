@@ -63,6 +63,7 @@ public class TestCaseService {
         String prompt = this.TEST_CASE_PROMPT;
         prompt += useCases;
         prompt += "Now generate the test cases based on the above instructions";
+        log.info("prompt: " +  prompt);
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)

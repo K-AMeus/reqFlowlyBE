@@ -13,6 +13,6 @@ import java.util.UUID;
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
 
     Optional<Project> findByUserIdAndId(String userId, UUID id);
-    Page<Project> findAllByUserIdOrderByUpdatedAtDesc(String userId, Pageable pageable);
+    Page<Project> findAllByUserId(String userId, Pageable pageable);
     void deleteByUserIdAndId(String userId, UUID id);
 }
