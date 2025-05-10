@@ -4,6 +4,7 @@ import java.util.List;
 
 public record UseCaseCreateReqDto(
         String domainObject,
-        List<String> attributes
+        List<String> attributes,
+        String customPrompt
 ) {
 }

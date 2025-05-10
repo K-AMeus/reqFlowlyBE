@@ -17,10 +17,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.lang.Nullable;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -39,19 +41,21 @@ public class UseCaseService {
     @Value("${ANTLR_GRAMMAR}")
     private String ANTLR_GRAMMAR;
 
+    private static final String ADDITIONAL_HEADER = "Additional custom instructions:";
+    private static final String ENTITY_LABEL      = "* **Domain Entity Name:** ";
+    private static final String ATTR_LABEL        = "* **Attributes:** ";
+
 
     public List<UseCaseCreateResDto> generateUseCases(UUID projectId, UUID requirementId, UseCaseCreateReqDto req) {
         log.info("Received request: {}", req);
         requirementRepository.findByProjectIdAndId(projectId, requirementId)
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
 
-        String domainObjects = req.domainObject();
-        List<String> attributes = req.attributes();
-        String aiResponse = callOpenAiForDomainObjects(domainObjects, attributes);
+        String aiResponse = callOpenAiForUseCases(req.domainObject(), req.attributes(), req.customPrompt());
         log.info("AI response: {}", aiResponse);
 
         UseCase useCase = new UseCase();
-        useCase.setName(domainObjects);
+        useCase.setName(req.domainObject());
         useCase.setContent(aiResponse);
         useCase.setRequirementId(requirementId);
         useCase.setCreatedAt(Instant.now());
@@ -66,20 +70,41 @@ public class UseCaseService {
         return result;
     }
 
-    private String callOpenAiForDomainObjects(String domainObject, List<String> attributes) {
-        String prompt = this.USE_CASE_PROMPT;
-        prompt += "* **Domain Entity Name:** "+ domainObject;
-        prompt += "* **Attributes:** " + attributes;
-        prompt += this.ANTLR_GRAMMAR;
+    private String callOpenAiForUseCases(String domainObject, List<String> attributes, @Nullable String customPrompt) {
+        String prompt = buildPrompt(domainObject, attributes, customPrompt);
+        log.debug("OpenAI Use-case prompt:\n{}", prompt);
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
                 .model(ChatModel.GPT_4_TURBO)
                 .build();
 
-        ChatCompletion chatCompletion = openaiClient.chat().completions().create(params);
+        ChatCompletion completion = openaiClient.chat().completions().create(params);
 
-        return chatCompletion.choices().getFirst().message().content().orElse("");
+        return completion.choices()
+                .getFirst()
+                .message()
+                .content()
+                .orElse("");
+    }
+
+    private String buildPrompt(String domainObject,
+                               List<String> attributes,
+                               @Nullable String customPrompt) {
+
+        StringBuilder sb = new StringBuilder(USE_CASE_PROMPT).append('\n');
+
+        Optional.ofNullable(customPrompt)
+                .filter(s -> !s.isBlank())
+                .ifPresent(cp -> sb.append('\n')
+                        .append(ADDITIONAL_HEADER).append('\n')
+                        .append(cp.trim()).append("\n\n"));
+
+        sb.append(ENTITY_LABEL).append(domainObject).append('\n')
+                .append(ATTR_LABEL).append(attributes).append("\n\n")
+                .append(ANTLR_GRAMMAR);
+
+        return sb.toString();
     }
 
 
@@ -115,9 +140,5 @@ public class UseCaseService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.USE_CASE_NOT_FOUND));
 
         useCaseRepository.delete(useCase);
-
-
     }
-
-
 }

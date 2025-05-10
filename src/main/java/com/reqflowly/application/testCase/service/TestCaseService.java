@@ -1,7 +1,7 @@
 package com.reqflowly.application.testCase.service;
 
+import org.springframework.lang.Nullable;
 import com.openai.client.OpenAIClient;
-import com.openai.models.ChatCompletion;
 import com.openai.models.ChatCompletionCreateParams;
 import com.openai.models.ChatModel;
 import com.reqflowly.application.common.exception.ErrorCode;
@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,10 @@ public class TestCaseService {
     @Value("${TEST_CASE_PROMPT}")
     private String TEST_CASE_PROMPT;
 
+    private static final String ADDITIONAL_HEADER = "Additional custom instructions:";
+    private static final String ADDITIONAL_FOOTER = "End of custom instructions";
+    private static final String USE_CASE_HEADER = "**Input use-case specifications:**";
+
 
     public TestCaseCreateResDto createTestCases(UUID projectId, UUID requirementId, UUID useCaseId, TestCaseCreateReqDto req) {
         log.info("Received request: {}", req);
@@ -41,7 +46,7 @@ public class TestCaseService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
 
         String useCases = req.useCaseContent();
-        String aiResponse = callOpenAiForTestCases(useCases);
+        String aiResponse = callOpenAiForTestCases(useCases, req.customPrompt());
         log.info("AI response: {}", aiResponse);
 
         TestCase testCase = new TestCase();
@@ -54,25 +59,43 @@ public class TestCaseService {
         log.info("Saved test case with name: {}", savedTestCase.getName());
 
         return new TestCaseCreateResDto(savedTestCase.getId(), savedTestCase.getName(), savedTestCase.getContent());
-
-
     }
 
+    private String callOpenAiForTestCases(String useCases, String customPrompt) {
+        String prompt = buildPrompt(useCases, customPrompt);
 
-    private String callOpenAiForTestCases(String useCases) {
-        String prompt = this.TEST_CASE_PROMPT;
-        prompt += useCases;
-        prompt += "Now generate the test cases based on the above instructions";
-        log.info("prompt: " +  prompt);
+        log.debug("OpenAI prompt:\n{}", prompt);
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
                 .model(ChatModel.GPT_4_TURBO)
                 .build();
 
-        ChatCompletion chatCompletion = openaiClient.chat().completions().create(params);
+        return openaiClient.chat()
+                .completions()
+                .create(params)
+                .choices()
+                .getFirst()
+                .message()
+                .content()
+                .orElse("");
+    }
 
-        return chatCompletion.choices().getFirst().message().content().orElse("");
+    private String buildPrompt(String useCases, @Nullable String customPrompt) {
+        StringBuilder sb = new StringBuilder(TEST_CASE_PROMPT).append('\n');
+
+        Optional.ofNullable(customPrompt)
+                .filter(s -> !s.isBlank())
+                .ifPresent(cp -> sb.append('\n')
+                        .append(ADDITIONAL_HEADER).append('\n')
+                        .append(cp.trim()).append('\n')
+                        .append(ADDITIONAL_FOOTER).append("\n\n"));
+
+        sb.append(USE_CASE_HEADER).append('\n')
+                .append(useCases.trim()).append("\n\n")
+                .append("Now generate the test cases based on the above instructions.");
+
+        return sb.toString();
     }
 
     public List<TestCaseCreateResDto> getTestCases(UUID projectId, UUID requirementId, UUID useCaseId) {
