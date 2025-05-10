@@ -82,7 +82,7 @@ public class DomainObjectGenerationService {
 
     private String callOpenAiForDomainObjects(String text, @Nullable String customPrompt) {
         String prompt = buildPrompt(text, customPrompt);
-        log.info("OpenAI Domain-object prompt:\n{}", prompt);
+        log.info("Domain object prompt:\n{}", prompt);
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)

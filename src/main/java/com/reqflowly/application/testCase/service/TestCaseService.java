@@ -64,7 +64,7 @@ public class TestCaseService {
     private String callOpenAiForTestCases(String useCases, String customPrompt) {
         String prompt = buildPrompt(useCases, customPrompt);
 
-        log.debug("OpenAI prompt:\n{}", prompt);
+        log.info("test cases prompt:\n{}", prompt);
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)

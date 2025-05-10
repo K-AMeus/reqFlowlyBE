@@ -42,8 +42,9 @@ public class UseCaseService {
     private String ANTLR_GRAMMAR;
 
     private static final String ADDITIONAL_HEADER = "Additional custom instructions:";
-    private static final String ENTITY_LABEL      = "* **Domain Entity Name:** ";
-    private static final String ATTR_LABEL        = "* **Attributes:** ";
+    private static final String ADDITIONAL_FOOTER = "End of custom instructions";
+    private static final String ENTITY_LABEL = "* **Domain Entity Name:** ";
+    private static final String ATTR_LABEL = "* **Attributes:** ";
 
 
     public List<UseCaseCreateResDto> generateUseCases(UUID projectId, UUID requirementId, UseCaseCreateReqDto req) {
@@ -72,7 +73,7 @@ public class UseCaseService {
 
     private String callOpenAiForUseCases(String domainObject, List<String> attributes, @Nullable String customPrompt) {
         String prompt = buildPrompt(domainObject, attributes, customPrompt);
-        log.debug("OpenAI Use-case prompt:\n{}", prompt);
+        log.info("Use case prompt:\n{}", prompt);
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
@@ -98,7 +99,8 @@ public class UseCaseService {
                 .filter(s -> !s.isBlank())
                 .ifPresent(cp -> sb.append('\n')
                         .append(ADDITIONAL_HEADER).append('\n')
-                        .append(cp.trim()).append("\n\n"));
+                        .append(cp.trim()).append('\n')
+                        .append(ADDITIONAL_FOOTER).append("\n\n"));
 
         sb.append(ENTITY_LABEL).append(domainObject).append('\n')
                 .append(ATTR_LABEL).append(attributes).append("\n\n")
