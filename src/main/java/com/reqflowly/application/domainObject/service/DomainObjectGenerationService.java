@@ -86,7 +86,8 @@ public class DomainObjectGenerationService {
 
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
-                .model(ChatModel.GPT_4_TURBO)
+                .model(ChatModel.CHATGPT_4O_LATEST)
+                .maxCompletionTokens(8_000L)
                 .build();
 
         ChatCompletion completion = openaiClient.chat().completions().create(params);
