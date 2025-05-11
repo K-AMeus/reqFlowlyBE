@@ -78,7 +78,9 @@ public class UseCaseService {
         ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
                 .addUserMessage(prompt)
                 .model(ChatModel.CHATGPT_4O_LATEST)
-                .maxCompletionTokens(8_000L)
+                .maxCompletionTokens(8_192L)
+                .temperature(0.8)
+                .topP(0.95)
                 .build();
 
         ChatCompletion completion = openaiClient.chat().completions().create(params);
