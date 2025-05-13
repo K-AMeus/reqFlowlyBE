@@ -4,6 +4,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,28 +14,26 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+@Slf4j
 @Configuration
 public class VertexAIConfig {
-
-    @Value("${GOOGLE_CLOUD_PROJECT}")
-    private String projectId;
-
-    @Value("${GOOGLE_CLOUD_LOCATION}")
-    private String location;
 
     @Value("${VERTEX_SERVICE_ACCOUNT}")
     private String vertexServiceAccountJson;
 
-
-
     @Bean(destroyMethod = "close")
     public VertexAI vertexAI() throws Exception {
+        log.info("Inside VertexAi bean");
         try (InputStream stream =
                      new ByteArrayInputStream(vertexServiceAccountJson.getBytes(StandardCharsets.UTF_8))) {
+            log.info("input stream donezo");
 
             GoogleCredentials creds = GoogleCredentials.fromStream(stream)
                     .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
+            log.info("creds donezo");
 
+            String projectId = "flowspec-9ce0c";
+            String location = "us-central1";
             return new VertexAI.Builder()
                     .setProjectId(projectId)
                     .setLocation(location)
