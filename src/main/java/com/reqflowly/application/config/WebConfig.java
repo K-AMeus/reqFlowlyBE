@@ -38,6 +38,7 @@ public class WebConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/usecase-service/v1/usecases/**").permitAll()
+                        .requestMatchers("/api/domain-object-service/v1/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
@@ -49,7 +50,8 @@ public class WebConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:5173",
                 "https://reqflowly.up.railway.app",
-                "https://spec2testfe-production.up.railway.app"));
+                "https://spec2testfe-production.up.railway.app",
+                "https://spec2testbe-production.up.railway.app/api/domain-object-service/v1/generation/text"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
