@@ -60,6 +60,16 @@ dependencies {
 	// OpenAI
 	implementation 'com.openai:openai-java:0.23.1'
 
+	// For PDF reading/parsing
+	implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+	implementation 'com.vladsch.flexmark:flexmark-all:0.64.8'
+	implementation 'org.xhtmlrenderer:flying-saucer-pdf:9.3.1'
+	implementation 'org.xhtmlrenderer:flying-saucer-core:9.3.1'
+	implementation 'com.itextpdf:itextpdf:5.5.13.3'
+	implementation('org.apache.pdfbox:pdfbox:3.0.4') {
+		exclude group: 'commons-logging', module: 'commons-logging'
+	}
+
 	// Vertex AI
 	implementation platform('com.google.cloud:google-cloud-vertexai-bom:1.22.0')
 	implementation('com.google.cloud:google-cloud-vertexai') {
