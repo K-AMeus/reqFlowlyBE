@@ -16,10 +16,10 @@ import java.util.List;
 @Configuration
 public class VertexAIConfig {
 
-    @Value("${google.cloud.project-id}")
+    @Value("${GOOGLE_CLOUD_PROJECT}")
     private String projectId;
 
-    @Value("${google.cloud.location}")
+    @Value("${GOOGLE_CLOUD_LOCATION}")
     private String location;
 
     @Value("${VERTEX_SERVICE_ACCOUNT}")
