@@ -5,35 +5,30 @@ import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @Slf4j
 @Configuration
 public class VertexAIConfig {
 
-    @Value("${VERTEX_SERVICE_ACCOUNT}")
-    private String vertexServiceAccountJson;
 
     @Bean(destroyMethod = "close")
-    public VertexAI vertexAI() throws Exception {
-        log.info("Inside VertexAi bean");
-        try (InputStream stream =
-                     new ByteArrayInputStream(vertexServiceAccountJson.getBytes(StandardCharsets.UTF_8))) {
-            log.info("input stream donezo");
+    public VertexAI vertexAI() throws IOException {
+        try (InputStream in =
+                     new ClassPathResource("VertexServiceAccount.json").getInputStream()) {
 
-            GoogleCredentials creds = GoogleCredentials.fromStream(stream)
+            GoogleCredentials creds = GoogleCredentials.fromStream(in)
                     .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
-            log.info("creds donezo");
 
             String projectId = "flowspec-9ce0c";
             String location = "us-central1";
+
             return new VertexAI.Builder()
                     .setProjectId(projectId)
                     .setLocation(location)
@@ -41,6 +36,7 @@ public class VertexAIConfig {
                     .build();
         }
     }
+
 
 
     // testing models:
