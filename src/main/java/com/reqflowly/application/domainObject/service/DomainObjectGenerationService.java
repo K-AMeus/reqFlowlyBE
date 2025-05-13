@@ -3,10 +3,10 @@ package com.reqflowly.application.domainObject.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.openai.client.OpenAIClient;
-import com.openai.models.ChatCompletion;
-import com.openai.models.ChatCompletionCreateParams;
-import com.openai.models.ChatModel;
+import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.reqflowly.application.domainObject.dto.DomainObjectGenerationDto;
 import com.reqflowly.application.domainObject.dto.DomainObjectGenerationReq;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.lang.Nullable;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +30,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class DomainObjectGenerationService {
 
-    private final OpenAIClient openaiClient;
+    private final GenerativeModel geminiTextModel;
+    private final GenerationConfig defaultGenConfig;
 
     @Value("${DOMAIN_EXTRACTION_PROMPT}")
     private String DOMAIN_EXTRACTION_PROMPT;
@@ -57,7 +59,7 @@ public class DomainObjectGenerationService {
             """;
 
     public DomainObjectGenerationDto processUseCaseText(DomainObjectGenerationReq req) {
-        String gptResponse = callOpenAiForDomainObjects(req.getDescription(), req.getCustomPrompt());
+        String gptResponse = callAiForDomainObjects(req.getDescription(), req.getCustomPrompt());
         log.info(gptResponse);
         return parseGptResponse(gptResponse);
     }
@@ -65,7 +67,7 @@ public class DomainObjectGenerationService {
     public DomainObjectGenerationDto processUseCaseFile(MultipartFile file, String customPrompt) {
         try {
             String text = extractTextFromPDF(file.getInputStream());
-            String gptResponse = callOpenAiForDomainObjects(text, customPrompt);
+            String gptResponse = callAiForDomainObjects(text, customPrompt);
             return parseGptResponse(gptResponse);
         } catch (Exception e) {
             throw new RuntimeException("Error processing PDF file", e);
@@ -80,25 +82,20 @@ public class DomainObjectGenerationService {
         }
     }
 
-    private String callOpenAiForDomainObjects(String text, @Nullable String customPrompt) {
+    private String callAiForDomainObjects(String text, @Nullable String customPrompt) {
         String prompt = buildPrompt(text, customPrompt);
-        log.info("Domain object prompt:\n{}", prompt);
+        log.info("Use case prompt:\n{}", prompt);
 
-        ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                .addUserMessage(prompt)
-                .model(ChatModel.CHATGPT_4O_LATEST)
-                .maxCompletionTokens(8_192L)
-                .temperature(0.8)
-                .topP(0.95)
-                .build();
+        GenerateContentResponse resp;
+        try {
+            resp = geminiTextModel
+                    .withGenerationConfig(defaultGenConfig)
+                    .generateContent(prompt);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        ChatCompletion completion = openaiClient.chat().completions().create(params);
-
-        return completion.choices()
-                .getFirst()
-                .message()
-                .content()
-                .orElse("");
+        return ResponseHandler.getText(resp);
     }
 
     private String buildPrompt(String text, @Nullable String customPrompt) {

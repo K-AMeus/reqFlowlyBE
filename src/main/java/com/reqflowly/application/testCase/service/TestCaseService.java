@@ -1,9 +1,10 @@
 package com.reqflowly.application.testCase.service;
 
+import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import org.springframework.lang.Nullable;
-import com.openai.client.OpenAIClient;
-import com.openai.models.ChatCompletionCreateParams;
-import com.openai.models.ChatModel;
 import com.reqflowly.application.common.exception.ErrorCode;
 import com.reqflowly.application.common.exception.InvalidStateException;
 import com.reqflowly.application.requirement.repository.RequirementRepository;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,7 +32,8 @@ public class TestCaseService {
     private final TestCaseRepository testCaseRepository;
     private final RequirementRepository requirementRepository;
     private final TestCaseMapper testCaseMapper;
-    private final OpenAIClient openaiClient;
+    private final GenerativeModel geminiTextModel;
+    private final GenerationConfig defaultGenConfig;
 
     @Value("${TEST_CASE_PROMPT}")
     private String TEST_CASE_PROMPT;
@@ -46,7 +49,7 @@ public class TestCaseService {
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
 
         String useCases = req.useCaseContent();
-        String aiResponse = callOpenAiForTestCases(useCases, req.customPrompt());
+        String aiResponse = callAiForTestCases(useCases, req.customPrompt());
         log.info("AI response: {}", aiResponse);
 
         TestCase testCase = new TestCase();
@@ -61,27 +64,20 @@ public class TestCaseService {
         return new TestCaseCreateResDto(savedTestCase.getId(), savedTestCase.getName(), savedTestCase.getContent());
     }
 
-    private String callOpenAiForTestCases(String useCases, String customPrompt) {
+    private String callAiForTestCases(String useCases, String customPrompt) {
         String prompt = buildPrompt(useCases, customPrompt);
+        log.info("Use case prompt:\n{}", prompt);
 
-        log.info("test cases prompt:\n{}", prompt);
+        GenerateContentResponse resp;
+        try {
+            resp = geminiTextModel
+                    .withGenerationConfig(defaultGenConfig)
+                    .generateContent(prompt);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                .addUserMessage(prompt)
-                .model(ChatModel.CHATGPT_4O_LATEST)
-                .maxCompletionTokens(8_192L)
-                .temperature(0.8)
-                .topP(0.95)
-                .build();
-
-        return openaiClient.chat()
-                .completions()
-                .create(params)
-                .choices()
-                .getFirst()
-                .message()
-                .content()
-                .orElse("");
+        return ResponseHandler.getText(resp);
     }
 
     private String buildPrompt(String useCases, @Nullable String customPrompt) {

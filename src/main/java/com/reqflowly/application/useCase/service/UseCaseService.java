@@ -1,9 +1,9 @@
 package com.reqflowly.application.useCase.service;
 
-import com.openai.client.OpenAIClient;
-import com.openai.models.ChatCompletion;
-import com.openai.models.ChatCompletionCreateParams;
-import com.openai.models.ChatModel;
+import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.generativeai.GenerativeModel;
+import com.google.cloud.vertexai.generativeai.ResponseHandler;
 import com.reqflowly.application.common.exception.ErrorCode;
 import com.reqflowly.application.common.exception.InvalidStateException;
 import com.reqflowly.application.requirement.repository.RequirementRepository;
@@ -19,11 +19,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.lang.Nullable;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,7 +36,8 @@ public class UseCaseService {
     private final UseCaseRepository useCaseRepository;
     private final RequirementRepository requirementRepository;
     private final UseCaseMapper useCaseMapper;
-    private final OpenAIClient openaiClient;
+    private final GenerativeModel geminiTextModel;
+    private final GenerationConfig defaultGenConfig;
 
     @Value("${USE_CASE_PROMPT}")
     private String USE_CASE_PROMPT;
@@ -46,13 +49,24 @@ public class UseCaseService {
     private static final String ENTITY_LABEL = "* **Domain Entity Name:** ";
     private static final String ATTR_LABEL = "* **Attributes:** ";
 
+    private static final Pattern LEADING_CODE_FENCE =
+            Pattern.compile("^```[\\p{Alnum}-]*[\\r\\n]+");
+
+    private static String stripMarkdownFence(String text) {
+        if (text == null) return null;
+
+        String body = LEADING_CODE_FENCE.matcher(text).replaceFirst("");
+        body = body.replaceFirst("[\\r\\n]+```\\s*$", "");
+        return body.trim();
+    }
+
 
     public List<UseCaseCreateResDto> generateUseCases(UUID projectId, UUID requirementId, UseCaseCreateReqDto req) {
         log.info("Received request: {}", req);
         requirementRepository.findByProjectIdAndId(projectId, requirementId)
                 .orElseThrow(() -> new InvalidStateException(ErrorCode.REQUIREMENT_NOT_FOUND));
 
-        String aiResponse = callOpenAiForUseCases(req.domainObject(), req.attributes(), req.customPrompt());
+        String aiResponse = callAiForUseCases(req.domainObject(), req.attributes(), req.customPrompt());
         log.info("AI response: {}", aiResponse);
 
         UseCase useCase = new UseCase();
@@ -71,25 +85,23 @@ public class UseCaseService {
         return result;
     }
 
-    private String callOpenAiForUseCases(String domainObject, List<String> attributes, @Nullable String customPrompt) {
+    private String callAiForUseCases(String domainObject, List<String> attributes, @Nullable String customPrompt) {
+
+
         String prompt = buildPrompt(domainObject, attributes, customPrompt);
         log.info("Use case prompt:\n{}", prompt);
 
-        ChatCompletionCreateParams params = ChatCompletionCreateParams.builder()
-                .addUserMessage(prompt)
-                .model(ChatModel.CHATGPT_4O_LATEST)
-                .maxCompletionTokens(8_192L)
-                .temperature(0.8)
-                .topP(0.95)
-                .build();
+        GenerateContentResponse resp;
+        try {
+            resp = geminiTextModel
+                    .withGenerationConfig(defaultGenConfig)
+                    .generateContent(prompt);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        ChatCompletion completion = openaiClient.chat().completions().create(params);
-
-        return completion.choices()
-                .getFirst()
-                .message()
-                .content()
-                .orElse("");
+        String raw = ResponseHandler.getText(resp);
+        return stripMarkdownFence(raw);
     }
 
     private String buildPrompt(String domainObject,
