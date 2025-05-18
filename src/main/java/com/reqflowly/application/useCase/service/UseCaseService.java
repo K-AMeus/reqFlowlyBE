@@ -94,7 +94,7 @@ public class UseCaseService {
         try {
             stream = geminiTextModel.generateContentStream(prompt);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error streaming use cases from AI", e);
         }
 
         StringBuilder sb = new StringBuilder();

@@ -7,6 +7,7 @@ import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.ResponseHandler;
+import com.google.cloud.vertexai.generativeai.ResponseStream;
 import com.reqflowly.application.domainObject.dto.DomainObjectGenerationDto;
 import com.reqflowly.application.domainObject.dto.DomainObjectGenerationReq;
 import lombok.RequiredArgsConstructor;
@@ -82,20 +83,25 @@ public class DomainObjectGenerationService {
         }
     }
 
-    private String callAiForDomainObjects(String text, @Nullable String customPrompt) {
+    private String callAiForDomainObjects(String text, String customPrompt) {
         String prompt = buildPrompt(text, customPrompt);
-        log.info("Use case prompt:\n{}", prompt);
+        log.info("Domain extraction prompt:\n{}", prompt);
 
-        GenerateContentResponse resp;
+        StringBuilder sb = new StringBuilder();
         try {
-            resp = geminiTextModel
-                    .withGenerationConfig(defaultGenConfig)
-                    .generateContent(prompt);
+            ResponseStream<GenerateContentResponse> stream =
+                    geminiTextModel
+                            .withGenerationConfig(defaultGenConfig)
+                            .generateContentStream(prompt);
+
+            for (GenerateContentResponse chunk : stream) {
+                sb.append(ResponseHandler.getText(chunk));
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error streaming domain objects from AI", e);
         }
 
-        return ResponseHandler.getText(resp);
+        return sb.toString();
     }
 
     private String buildPrompt(String text, @Nullable String customPrompt) {

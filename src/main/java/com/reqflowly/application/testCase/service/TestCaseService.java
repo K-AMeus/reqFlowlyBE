@@ -1,9 +1,9 @@
 package com.reqflowly.application.testCase.service;
 
 import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.ResponseHandler;
+import com.google.cloud.vertexai.generativeai.ResponseStream;
 import org.springframework.lang.Nullable;
 import com.reqflowly.application.common.exception.ErrorCode;
 import com.reqflowly.application.common.exception.InvalidStateException;
@@ -33,7 +33,6 @@ public class TestCaseService {
     private final RequirementRepository requirementRepository;
     private final TestCaseMapper testCaseMapper;
     private final GenerativeModel geminiTextModel;
-    private final GenerationConfig defaultGenConfig;
 
     @Value("${TEST_CASE_PROMPT}")
     private String TEST_CASE_PROMPT;
@@ -66,18 +65,21 @@ public class TestCaseService {
 
     private String callAiForTestCases(String useCases, String customPrompt) {
         String prompt = buildPrompt(useCases, customPrompt);
-        log.info("Use case prompt:\n{}", prompt);
+        log.info("Test case prompt:\n{}", prompt);
 
-        GenerateContentResponse resp;
+        StringBuilder sb = new StringBuilder();
         try {
-            resp = geminiTextModel
-                    .withGenerationConfig(defaultGenConfig)
-                    .generateContent(prompt);
+            ResponseStream<GenerateContentResponse> stream =
+                    geminiTextModel.generateContentStream(prompt);
+
+            for (GenerateContentResponse chunk : stream) {
+                sb.append(ResponseHandler.getText(chunk));
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error streaming test cases from AI", e);
         }
 
-        return ResponseHandler.getText(resp);
+        return sb.toString();
     }
 
     private String buildPrompt(String useCases, @Nullable String customPrompt) {
