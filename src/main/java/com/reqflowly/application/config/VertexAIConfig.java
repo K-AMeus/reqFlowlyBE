@@ -1,6 +1,7 @@
 package com.reqflowly.application.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
+import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
@@ -26,15 +27,17 @@ public class VertexAIConfig {
             @Value("${VERTEXAI_PROJECT_ID}") String projectId,
             @Value("${VERTEXAI_LOCATION}") String location
     ) throws IOException {
+        String raw = serviceAccountJson.replace("\\n", "\n");
         try (InputStream stream = new ByteArrayInputStream(
-                serviceAccountJson.getBytes(StandardCharsets.UTF_8))) {
-
-            GoogleCredentials creds = GoogleCredentials.fromStream(stream)
+                raw.getBytes(StandardCharsets.UTF_8))) {
+            GoogleCredentials creds = GoogleCredentials
+                    .fromStream(stream)
                     .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
 
             return new VertexAI.Builder()
                     .setProjectId(projectId)
                     .setLocation(location)
+                    .setTransport(Transport.REST)
                     .setCredentials(creds)
                     .build();
         }
