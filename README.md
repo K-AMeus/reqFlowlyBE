@@ -14,7 +14,6 @@ ReqFlowly is a web-based application that automates the analysis of software req
   - [Installation](#installation)
   - [Configuration](#configuration)
 - [Usage](#-usage)
-- [API Documentation](#-api-documentation)
 - [Project Structure](#-project-structure)
 
 ## ✨ Features
@@ -30,7 +29,7 @@ ReqFlowly provides the following key features:
 - **User Authentication**: Secure user login and registration.
 - **Project Management**: Create, manage, and organize projects.
 
-## 🏛 Technology stack
+## 🛠 Technology stack
 
 ReqFlowly follows a three-tier architecture:
 
@@ -81,14 +80,12 @@ docker run -p 8080:8080 reqFlowlyBE
 In order to run the application, the following configuration variables have to be defined in the `application.yml` file in the `src/main/resources` directory:
 
 ```yaml
-
 spring:
   # Database Configuration
   datasource:
     url: jdbc:postgresql://localhost:5432/reqflowly
     username: your_postgres_username
     password: your_postgres_password
-
 
 # Firebase Configuration
 FIREBASE_SERVICE_ACCOUNT: # Path to your Firebase service account JSON file or service account JSON as a string
@@ -123,29 +120,6 @@ The application provides a RESTful API that can be used to:
 4. **Generate Test Cases**: Derive test cases from use cases.
 5. **Export Artifacts**: Export generated artifacts as PDF documents.
 
-## 📚 API Documentation
-
-### Domain Object Generation
-
-```
-POST /api/domain-object-service/v1/generation/text
-Content-Type: application/json
-Authorization: Bearer {token}
-
-{
-  "requirements": "...",
-  "customPrompt": "..."
-}
-```
-
-```
-POST /api/domain-object-service/v1/generation/pdf
-Content-Type: multipart/form-data
-Authorization: Bearer {token}
-
-file: [PDF file]
-customPrompt: (optional) "..."
-```
 
 ## 📁 Project Structure
 
