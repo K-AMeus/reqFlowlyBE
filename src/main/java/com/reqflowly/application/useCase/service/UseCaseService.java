@@ -1,9 +1,9 @@
 package com.reqflowly.application.useCase.service;
 
 import com.google.cloud.vertexai.api.GenerateContentResponse;
-import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.cloud.vertexai.generativeai.ResponseHandler;
+import com.google.cloud.vertexai.generativeai.ResponseStream;
 import com.reqflowly.application.common.exception.ErrorCode;
 import com.reqflowly.application.common.exception.InvalidStateException;
 import com.reqflowly.application.requirement.repository.RequirementRepository;
@@ -37,7 +37,6 @@ public class UseCaseService {
     private final RequirementRepository requirementRepository;
     private final UseCaseMapper useCaseMapper;
     private final GenerativeModel geminiTextModel;
-    private final GenerationConfig defaultGenConfig;
 
     @Value("${USE_CASE_PROMPT}")
     private String USE_CASE_PROMPT;
@@ -91,17 +90,19 @@ public class UseCaseService {
         String prompt = buildPrompt(domainObject, attributes, customPrompt);
         log.info("Use case prompt:\n{}", prompt);
 
-        GenerateContentResponse resp;
+        ResponseStream<GenerateContentResponse> stream;
         try {
-            resp = geminiTextModel
-                    .withGenerationConfig(defaultGenConfig)
-                    .generateContent(prompt);
+            stream = geminiTextModel.generateContentStream(prompt);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        String raw = ResponseHandler.getText(resp);
-        return stripMarkdownFence(raw);
+        StringBuilder sb = new StringBuilder();
+        for (GenerateContentResponse chunk : stream) {
+            String text = ResponseHandler.getText(chunk);
+            sb.append(text);
+        }
+        return stripMarkdownFence(sb.toString());
     }
 
     private String buildPrompt(String domainObject,
