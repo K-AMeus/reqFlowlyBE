@@ -67,18 +67,18 @@ public class TestCaseService {
         String prompt = buildPrompt(useCases, customPrompt);
         log.info("Test case prompt:\n{}", prompt);
 
-        StringBuilder sb = new StringBuilder();
+        ResponseStream<GenerateContentResponse> stream;
         try {
-            ResponseStream<GenerateContentResponse> stream =
-                    geminiTextModel.generateContentStream(prompt);
-
-            for (GenerateContentResponse chunk : stream) {
-                sb.append(ResponseHandler.getText(chunk));
-            }
+            stream = geminiTextModel.generateContentStream(prompt);
         } catch (IOException e) {
             throw new RuntimeException("Error streaming test cases from AI", e);
         }
 
+        StringBuilder sb = new StringBuilder();
+        for (GenerateContentResponse chunk : stream) {
+            String text = ResponseHandler.getText(chunk);
+            sb.append(text);
+        }
         return sb.toString();
     }
 

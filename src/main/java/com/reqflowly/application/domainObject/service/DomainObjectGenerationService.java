@@ -87,20 +87,18 @@ public class DomainObjectGenerationService {
         String prompt = buildPrompt(text, customPrompt);
         log.info("Domain extraction prompt:\n{}", prompt);
 
-        StringBuilder sb = new StringBuilder();
+        ResponseStream<GenerateContentResponse> stream;
         try {
-            ResponseStream<GenerateContentResponse> stream =
-                    geminiTextModel
-                            .withGenerationConfig(defaultGenConfig)
-                            .generateContentStream(prompt);
-
-            for (GenerateContentResponse chunk : stream) {
-                sb.append(ResponseHandler.getText(chunk));
-            }
+            stream = geminiTextModel.generateContentStream(prompt);
         } catch (IOException e) {
             throw new RuntimeException("Error streaming domain objects from AI", e);
         }
 
+        StringBuilder sb = new StringBuilder();
+        for (GenerateContentResponse chunk : stream) {
+            String textFromAI = ResponseHandler.getText(chunk);
+            sb.append(textFromAI);
+        }
         return sb.toString();
     }
 

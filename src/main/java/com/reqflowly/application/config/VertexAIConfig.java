@@ -1,14 +1,18 @@
 package com.reqflowly.application.config;
 
+import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.vertexai.Transport;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.GenerationConfig;
+import com.google.cloud.vertexai.api.PredictionServiceClient;
+import com.google.cloud.vertexai.api.PredictionServiceSettings;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.threeten.bp.Duration;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -28,22 +32,46 @@ public class VertexAIConfig {
             @Value("${VERTEXAI_LOCATION}") String location
     ) throws IOException {
         String raw = serviceAccountJson.replace("\\n", "\n");
-        try (InputStream stream = new ByteArrayInputStream(
-                raw.getBytes(StandardCharsets.UTF_8))) {
-            GoogleCredentials creds = GoogleCredentials
-                    .fromStream(stream)
+        GoogleCredentials creds;
+        try (InputStream stream = new ByteArrayInputStream(raw.getBytes(StandardCharsets.UTF_8))) {
+            creds = GoogleCredentials.fromStream(stream)
                     .createScoped(List.of("https://www.googleapis.com/auth/cloud-platform"));
-
-            return new VertexAI.Builder()
-                    .setProjectId(projectId)
-                    .setLocation(location)
-                    .setTransport(Transport.REST)
-                    .setCredentials(creds)
-                    .build();
         }
+
+        PredictionServiceSettings.Builder settingsBuilder =
+                PredictionServiceSettings.newHttpJsonBuilder();
+
+        settingsBuilder.generateContentSettings()
+                .setRetrySettings(
+                        settingsBuilder.generateContentSettings()
+                                .getRetrySettings()
+                                .toBuilder()
+                                .setTotalTimeout(Duration.ofMinutes(3))
+                                .build()
+                );
+
+        settingsBuilder.streamGenerateContentSettings()
+                .setRetrySettings(
+                        settingsBuilder.streamGenerateContentSettings()
+                                .getRetrySettings()
+                                .toBuilder()
+                                .setTotalTimeout(Duration.ofMinutes(3))
+                                .build()
+                );
+
+        PredictionServiceSettings psSettings = settingsBuilder
+                .setCredentialsProvider(FixedCredentialsProvider.create(creds))
+                .build();
+        PredictionServiceClient psClient = PredictionServiceClient.create(psSettings);
+
+        return new VertexAI.Builder()
+                .setProjectId(projectId)
+                .setLocation(location)
+                .setTransport(Transport.REST)
+                .setPredictionClientSupplier(() -> psClient)
+                .setCredentials(creds)
+                .build();
     }
-
-
 
     // testing models:
     // gemini-2.0-flash-001

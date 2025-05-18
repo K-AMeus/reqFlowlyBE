@@ -85,8 +85,6 @@ public class UseCaseService {
     }
 
     private String callAiForUseCases(String domainObject, List<String> attributes, @Nullable String customPrompt) {
-
-
         String prompt = buildPrompt(domainObject, attributes, customPrompt);
         log.info("Use case prompt:\n{}", prompt);
 
