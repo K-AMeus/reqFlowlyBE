@@ -4,6 +4,8 @@
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.4.2-green)](https://spring.io/projects/spring-boot)
 
 ReqFlowly is a web-based application that automates the analysis of software requirements using artificial intelligence together with rule-based heuristics. It assists users with the identification of key domain entities and with the generation of use cases and test cases, significantly reducing manual effort and improving the accuracy of requirements.
+### [->Link to deployed application<-](https://reqflowly.up.railway.app/)
+
 
 ## 📋 Table of Contents
 
@@ -46,6 +48,7 @@ ReqFlowly follows a three-tier architecture:
 - Gradle 8.x
 - PostgreSQL 14+
 - Google Cloud Platform account (for Vertex AI)
+- Firebase account (for authentication service)
 
 ### Installation
 
